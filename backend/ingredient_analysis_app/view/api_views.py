@@ -1,18 +1,13 @@
-from rest_framework import viewsets, mixins
-import logging
 import json
-from PIL import Image
-import numpy as np
-from rest_framework import generics, status, viewsets
+import logging
+from rest_framework import generics, status, viewsets, mixins
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth.models import User
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
-from drf_spectacular.types import OpenApiTypes
-
+from drf_spectacular.utils import extend_schema, OpenApiExample
 
 from ..models import IngredientAnalysis
 from ..serializers import (
@@ -22,8 +17,9 @@ from ..serializers import (
     IngredientAnalysisSerializer,
     AnalyzeRequestSerializer
 )
+from ..service.ingredient_service import ingredient_analysis_service
 
-from ..utils.api_utils import get_model, prompt_template, parser, ocr_reader, parse_ai_response
+logger = logging.getLogger(__name__)
 
 
 class RegisterAPIView(generics.CreateAPIView):
@@ -111,6 +107,7 @@ class UserProfileAPIView(generics.RetrieveUpdateAPIView):
 
 
 class AnalyzeIngredientsAPIView(APIView):
+    """Simplified view using service layer"""
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
 
@@ -128,62 +125,26 @@ class AnalyzeIngredientsAPIView(APIView):
         category = serializer.validated_data['category']
 
         try:
-            # Process image with OCR (synchronously) - NO DB ENTRY YET
-            img = Image.open(image)
-            img = np.array(img)
-            results = ocr_reader.read_text(img)
+            # Use service layer for analysis
+            analysis_result = ingredient_analysis_service.analyze_image(
+                image_file=image,
+                category=category,
+                user=request.user
+            )
 
-            # Extract text correctly
-            text_only = [item[1] for item in results if isinstance(
-                item, (list, tuple)) and len(item) > 1]
-            ingredients_text = ", ".join(
-                text_only) if text_only else "No text detected"
-
-            print(ingredients_text)
-
-            # Get user medical history
-            try:
-                allergies = request.user.medicalhistory.allergies.split(',') if hasattr(
-                    request.user, 'medicalhistory') and request.user.medicalhistory.allergies else ["No allergy"]
-                diseases = request.user.medicalhistory.diseases.split(',') if hasattr(
-                    request.user, 'medicalhistory') and request.user.medicalhistory.diseases else ["No disease"]
-            except Exception:
-                allergies = ["No allergy"]
-                diseases = ["No disease"]
-
-            # AI analysis (synchronously)
-            model_instance = get_model()
-            chain = prompt_template | model_instance | parser
-            llm_response = chain.invoke({
-                "list_of_ingredients": ingredients_text,
-                "category": category,
-                "allergies": ", ".join(allergies),
-                "diseases": ", ".join(diseases)
-            })
-
-            # Parse result
-            parsed_result = parse_ai_response(llm_response)
-
-            # CHECK FOR ANALYSIS FAILURE BEFORE DB CREATION
-            if parsed_result.get('no_valid_ingredients', False):
-                # Analysis failed - return error without saving to DB
+            # Handle analysis failure
+            if not analysis_result['success']:
                 return Response({
                     'status': 'failed',
-                    'error': parsed_result.get('key_advice', 'Please retake the photo with better lighting and ensure ingredient list is clearly visible')
+                    'error': analysis_result['error']
                 }, status=status.HTTP_400_BAD_REQUEST)
 
-            # Add metadata for successful analysis
-            parsed_result["metadata"] = {
-                "extracted_ingredients": text_only,
-                "status": "completed"
-            }
-
-            # ONLY CREATE DB ENTRY AFTER CONFIRMING SUCCESS
+            # Create database entry only after successful analysis
             analysis = IngredientAnalysis.objects.create(
                 user=request.user,
                 category=category,
                 image=image,
-                result=json.dumps(parsed_result)
+                result=json.dumps(analysis_result['result'])
             )
 
             # Return successful response
@@ -194,12 +155,12 @@ class AnalyzeIngredientsAPIView(APIView):
                     'id': analysis.id,
                     'category': analysis.category,
                     'created_at': analysis.timestamp,
-                    'result': parsed_result
+                    'result': analysis_result['result']
                 }
             }, status=status.HTTP_200_OK)
 
         except Exception as e:
-            # Return failed response without creating DB entry
+            logger.error(f"Analysis API error: {str(e)}")
             return Response({
                 'status': 'failed',
                 'error': f'Processing failed: {str(e)}'
@@ -218,30 +179,6 @@ class IngredientAnalysisViewSet(
     def get_queryset(self):
         return IngredientAnalysis.objects.filter(user=self.request.user)
 
-    # def retrieve(self, request, *args, **kwargs):
-    #     instance = self.get_object()
-    #     serializer = self.get_serializer(instance)
-    #     data = serializer.data
-    #     try:
-    #         if isinstance(data['result'], str):
-    #             data['result'] = json.loads(data['result'])
-    #     except (json.JSONDecodeError, KeyError):
-    #         pass
-    #     return Response(data)
-
-    # def list(self, request, *args, **kwargs):
-    #     queryset = self.get_queryset()
-    #     page = self.paginate_queryset(queryset)
-    #     serializer = self.get_serializer(page, many=True)
-    #     data = serializer.data
-    #     for item in data:
-    #         try:
-    #             if isinstance(item['result'], str):
-    #                 item['result'] = json.loads(item['result'])
-    #         except (json.JSONDecodeError, KeyError):
-    #             pass
-    #     return self.get_paginated_response(data)
-
     def destroy(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
@@ -251,7 +188,7 @@ class IngredientAnalysisViewSet(
                 "message": "Analysis deleted successfully"
             }, status=status.HTTP_200_OK)
         except Exception as e:
-            logging.error(f"Error deleting analysis: {str(e)}")
+            logger.error(f"Error deleting analysis: {str(e)}")
             return Response({
                 "success": False,
                 "message": f"Failed to delete analysis: {str(e)}"
