@@ -190,7 +190,3 @@ The project uses ESLint for code linting. Run `npm run lint` to check for issues
 ## License
 
 This project is licensed under the MIT License.
-
-## Support
-
-For support and questions, please open an issue in the repository or contact the development team.
