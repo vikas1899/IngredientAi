@@ -34,6 +34,8 @@ class RegisterAPIView(generics.CreateAPIView):
             OpenApiExample(
                 "Registration Example",
                 value={
+                    "first_name": "John",
+                    "last_name": "Doe",
                     "username": "john_doe",
                     "email": "john@example.com",
                     "password": "securepassword123",

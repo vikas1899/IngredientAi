@@ -23,7 +23,6 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [busyDelete, setBusyDelete] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [avatar, setAvatar] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
 
   // Update form data when user data changes
@@ -36,9 +35,7 @@ const Profile = () => {
         last_name: user.last_name || '',
       });
       // Set avatar preview if user has an avatar URL
-      if (user.avatar) {
-        setAvatarPreview(user.avatar);
-      }
+     
     }
   }, [user]);
 
@@ -48,10 +45,9 @@ const Profile = () => {
       formData.username !== (user?.username || '') ||
       formData.email !== (user?.email || '') ||
       formData.first_name !== (user?.first_name || '') ||
-      formData.last_name !== (user?.last_name || '') ||
-      avatar !== null
+      formData.last_name !== (user?.last_name || '')
     );
-  }, [formData, user, avatar]);
+  }, [formData, user]);
 
   // Warn on unsaved changes
   useEffect(() => {
@@ -84,32 +80,6 @@ const Profile = () => {
     // Clear general messages
     if (error) setError('');
     if (success) setSuccess('');
-  };
-
-  const handleAvatarChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Validate file size (5MB max)
-      if (file.size > 5 * 1024 * 1024) {
-        setError('Avatar image must be less than 5MB');
-        return;
-      }
-
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        setError('Please select a valid image file');
-        return;
-      }
-
-      setAvatar(file);
-      
-      // Create preview URL
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setAvatarPreview(e.target.result);
-      };
-      reader.readAsDataURL(file);
-    }
   };
 
   const getAvatarInitials = () => {
@@ -168,20 +138,12 @@ const Profile = () => {
       // Create FormData for file upload if avatar is selected
       let submitData = formData;
       
-      if (avatar) {
-        const formDataWithAvatar = new FormData();
-        Object.keys(formData).forEach(key => {
-          formDataWithAvatar.append(key, formData[key]);
-        });
-        formDataWithAvatar.append('avatar', avatar);
-        submitData = formDataWithAvatar;
-      }
+      
 
       const result = await updateProfile(submitData);
       if (result.success) {
         setSuccess('Profile updated successfully!');
         setIsEditing(false);
-        setAvatar(null); // Reset avatar file
         setTimeout(() => setSuccess(''), 5000);
       } else {
         if (typeof result.error === 'object') {
@@ -208,8 +170,7 @@ const Profile = () => {
     setErrors({});
     setError('');
     setSuccess('');
-    setAvatar(null);
-    setAvatarPreview(user?.avatar || null);
+    
   };
 
   const handleDeleteAccount = async () => {
@@ -322,7 +283,6 @@ const Profile = () => {
                         <input
                           type="file"
                           accept="image/*"
-                          onChange={handleAvatarChange}
                           className="hidden"
                         />
                       </label>
@@ -342,13 +302,13 @@ const Profile = () => {
                   </div>
                   <div className="flex items-center text-sm text-gray-600">
                     <Calendar className="h-4 w-4 mr-3 text-gray-400" />
-                    <span>
-                      Member since {user?.date_joined ? new Date(user.date_joined).toLocaleDateString('en-US', { 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                      }) : 'N/A'}
-                    </span>
+                   <span>
+                    Member since: {user?.date_joined ? (() => {
+                      const d = new Date(user.date_joined);
+                      return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`;
+                    })() : 'N/A'}
+                  </span>
+
                   </div>
                   <div className="flex items-center text-sm text-gray-600">
                     <UserCheck className="h-4 w-4 mr-3 text-gray-400" />
@@ -386,61 +346,7 @@ const Profile = () => {
                 
                 <div className="p-8">
                   <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Avatar Upload Section */}
-                    {isEditing && (
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-3">
-                          Profile Picture
-                        </label>
-                        <div className="flex items-center space-x-4">
-                          <div className="relative w-16 h-16">
-                            {avatarPreview ? (
-                              <img
-                                src={avatarPreview}
-                                alt="Avatar preview"
-                                className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
-                              />
-                            ) : (
-                              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center border-2 border-gray-200">
-                                <span className="text-lg font-bold text-gray-600">
-                                  {getAvatarInitials() || <User className="h-8 w-8" />}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                          
-                          <div className="flex flex-col sm:flex-row gap-3">
-                            <label className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 cursor-pointer transition-colors duration-200 flex items-center">
-                              <Upload className="h-4 w-4 mr-2" />
-                              Choose Photo
-                              <input
-                                type="file"
-                                accept="image/*"
-                                onChange={handleAvatarChange}
-                                className="hidden"
-                              />
-                            </label>
-                            
-                            {(avatarPreview || avatar) && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setAvatar(null);
-                                  setAvatarPreview(null);
-                                }}
-                                className="px-4 py-2 text-red-600 text-sm font-medium border border-red-300 rounded-lg hover:bg-red-50 transition-colors duration-200"
-                              >
-                                Remove
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                        <p className="mt-2 text-sm text-gray-500">
-                          PNG, JPG up to 5MB. Recommended size: 400x400px
-                        </p>
-                      </div>
-                    )}
-
+                    
                     {/* First Name and Last Name */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>

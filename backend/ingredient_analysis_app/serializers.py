@@ -10,7 +10,9 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'password', 'repeat_password']
+        fields = ['first_name', 'last_name', 'username',
+                  'email', 'password', 'repeat_password', 'date_joined']
+        read_only_fields = ['id', 'date_joined']
 
     def validate(self, attrs):
         if attrs['password'] != attrs['repeat_password']:
@@ -20,6 +22,10 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         if User.objects.filter(username=attrs['username']).exists():
             raise serializers.ValidationError(
                 {"username": "Username already taken."})
+
+        if User.objects.filter(email=attrs['email']).exists():
+            raise serializers.ValidationError(
+                {"email": "Email already registered."})
 
         return attrs
 
@@ -54,8 +60,9 @@ class UserLoginSerializer(serializers.Serializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name']
-        read_only_fields = ['id']
+        fields = ['id', 'username', 'email',
+                  'first_name', 'last_name', 'date_joined']
+        read_only_fields = ['id', 'date_joined']
 
 
 class IngredientAnalysisSerializer(serializers.ModelSerializer):
