@@ -85,12 +85,13 @@ class AIAnalysisService:
         ---
 
         **STEP 3 – OVERALL ANALYSIS**
-        - Compute aggregated safety score (0–100) and safety level.
+        - Compute aggregated safety score (0–100) and safety level, .
         - Provide main verdict and `should_use` boolean.
         - Count total concerning ingredients.
         - List max 5 serious health alerts in `"health_alerts"`.
         - Suggest max 3-4 realistic, available alternatives.
         - Give a **main_verdict** in 2-4 line with human understandable language in a simple
+        - if the product is caution then give proper **key advice** for user which has the allergie match or the medical history matches
         - Give a 2-3 lines **key advice** for the user in a simple language so user can understand.
 
         ---
@@ -112,7 +113,7 @@ class AIAnalysisService:
                 "safety_score": 85,
                 "safety_level": "safe",
                 "should_use": true,
-                "main_verdict": "Generally safe with minor concerns",
+                "main_verdict": "Overall safe with minor cautions; suitable for most users",
                 "concern_count": 2
             }},
             "ingredients": [
@@ -121,23 +122,23 @@ class AIAnalysisService:
                     "status": "safe | caution | danger",
                     "concern_level": "low | medium | high",
                     "user_specific_risk": true,
-                    "quick_summary": "Brief 1-line impact",
-                    "why_flagged": "Specific reason if concerning, else empty"
+                    "quick_summary": "Concise 1-line description of impact human understandable language",
+                    "why_flagged": "Reason for concern if flagged; leave empty if safe"
                 }}
             ],
             "health_alerts": [
                 {{
                     "type": "allergy_match | condition_risk | interaction_warning",
                     "severity": "low | medium | high",
-                    "message": "Short warning message",
+                    "message": "Brief, clear warning message",
                     "ingredient": "Exact ingredient name",
-                    "action": "Practical user action"
+                    "action": "Practical recommended action for the user"
                 }}
             ],
             "recommendation": {{
                 "verdict": "recommend | caution | avoid",
                 "confidence": "high | medium | low",
-                "reason": "short reason",
+                "reason": "Short explanation for recommendation",
                 "safe_to_try": true
             }},
             "alternatives": [
