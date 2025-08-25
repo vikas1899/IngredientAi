@@ -1,3 +1,4 @@
+from ..utils.cache_utils import redis_client, generate_cache_key
 import json
 import logging
 import numpy as np
@@ -13,37 +14,26 @@ class IngredientAnalysisService:
 
     @staticmethod
     def analyze_image(image_file, category, user):
-        """
-        Complete ingredient analysis pipeline
-
-        Args:
-            image_file: Uploaded image file
-            category: Product category (skincare, cosmetics, etc.)
-            user: Django user instance
-
-        Returns:
-            dict: Analysis result or error information
-        """
         try:
-            # Step 1: Extract user medical history
             allergies, diseases = IngredientAnalysisService._get_user_medical_history(
                 user)
 
-            # Step 2: Process image with OCR
+            # Generate unique cache key
+            cache_key = f"ingredient_analysis:{generate_cache_key(image_file, category, allergies, diseases)}"
+
+            # Check Redis cache
+            cached_result = redis_client.get(cache_key)
+            if cached_result:
+                return json.loads(cached_result)
+
+            # Normal processing
             img = Image.open(image_file)
             img_array = np.array(img)
-
-            # Extract ingredients using OCR service
             extracted_ingredients = ocr_service.extract_ingredients_from_image(
                 img_array)
-
-            # Convert OCR results to text format
             ingredients_text = ", ".join(
                 extracted_ingredients) if extracted_ingredients else "No text detected"
 
-            logger.info(f"Extracted ingredients: {ingredients_text}")
-
-            # Step 3: AI Analysis
             analysis_result = ai_service.analyze_ingredients(
                 ingredients_text=ingredients_text,
                 category=category,
@@ -51,26 +41,27 @@ class IngredientAnalysisService:
                 diseases=diseases
             )
 
-            # Step 4: Check for analysis failure
-            if analysis_result.get('no_valid_ingredients', False):
+            # Cache only successful analyses with 7-day TTL
+            if not analysis_result.get('no_valid_ingredients', False):
+                analysis_result["metadata"] = {
+                    "extracted_ingredients": extracted_ingredients,
+                    "status": "completed"
+                }
+                response_obj = {
+                    'success': True,
+                    'result': analysis_result,
+                    'extracted_ingredients': extracted_ingredients
+                }
+                redis_client.set(cache_key, json.dumps(
+                    response_obj), ex=604800)  # TTL 7 days
+
+                return response_obj
+            else:
                 return {
                     'success': False,
                     'error': analysis_result.get('key_advice', 'Unable to process ingredients from image'),
                     'result': analysis_result
                 }
-
-            # Step 5: Add metadata for successful analysis
-            analysis_result["metadata"] = {
-                "extracted_ingredients": extracted_ingredients,
-                "status": "completed"
-            }
-
-            return {
-                'success': True,
-                'result': analysis_result,
-                'extracted_ingredients': extracted_ingredients
-            }
-
         except Exception as e:
             logger.error(f"Ingredient analysis error: {str(e)}")
             return {

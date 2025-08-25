@@ -1,125 +1,14 @@
 import os
 import re
+import json
 import tempfile
 import logging
+from io import BytesIO
 from paddleocr import PaddleOCR
 from PIL import Image
+from ..utils.cache_utils import generate_image_cache_key, redis_client
 
 logger = logging.getLogger(__name__)
-
-
-class SpellChecker:
-    """Advanced spell correction for cosmetic/skincare ingredients"""
-
-    @staticmethod
-    def correct_ingredient(ingredient):
-        """Advanced spell correction with comprehensive OCR error handling"""
-        if not ingredient or len(ingredient) < 2:
-            return ingredient
-
-        corrected = ingredient.lower().strip()
-
-        # Remove excessive repeated characters (common OCR error)
-        corrected = re.sub(r'(.)\1{2,}', r'\1', corrected)
-
-        # Comprehensive spell correction dictionary
-        ingredient_corrections = {
-            # Sodium variants - most common OCR error
-            'sodum': 'sodium', 'sodiurn': 'sodium', 'sodlum': 'sodium', 'sodiun': 'sodium',
-            'sodun': 'sodium', 'sodim': 'sodium', 'soclium': 'sodium', 'socium': 'sodium',
-            'sodjum': 'sodium', 'sodшm': 'sodium',
-
-            # Panthenol variants
-            'pantheno': 'panthenol', 'pantbeno': 'panthenol', 'panthen0': 'panthenol',
-            'pantbenol': 'panthenol', 'panthenoI': 'panthenol',
-
-            # Capryloyl variants
-            'capryloy': 'capryloyl', 'capryl0y': 'capryloyl', 'capryioy': 'capryloyl',
-            'capryloyll': 'capryloyl', 'capryl0yl': 'capryloyl',
-
-            # Pyrrolidone variants
-            'purrolidone': 'pyrrolidone', 'purrolidonc': 'pyrrolidone',
-            'pyrroliclone': 'pyrrolidone', 'pyrrolidоne': 'pyrrolidone',
-
-            # Common skincare ingredients
-            'barbadensis': 'barbadensis', 'barbadensls': 'barbadensis', 'barbadensjs': 'barbadensis',
-            'tocopherol': 'tocopherol', 't0copherol': 'tocopherol', 'tocopber0l': 'tocopherol',
-            'retinol': 'retinol', 'retln0l': 'retinol', 'retin0l': 'retinol',
-            'niacinamide': 'niacinamide', 'niacinamicle': 'niacinamide', 'nlacinamide': 'niacinamide',
-            'salicylic': 'salicylic', 'sallcylic': 'salicylic', 'salicyllc': 'salicylic',
-            'hyaluronic': 'hyaluronic', 'byaluronic': 'hyaluronic', 'hyalur0nic': 'hyaluronic',
-
-            # Basic ingredients
-            'glycerin': 'glycerin', 'glycerln': 'glycerin', 'giycerin': 'glycerin', 'glycerine': 'glycerin',
-            'ceramide': 'ceramide', 'ceramlde': 'ceramide', 'cerarnide': 'ceramide',
-            'peptide': 'peptide', 'peptlde': 'peptide', 'pептide': 'peptide',
-            'aqua': 'aqua', 'agua': 'aqua', 'aqva': 'aqua', 'aqya': 'aqua',
-            'chloride': 'chloride', 'chioride': 'chloride', 'chlorlde': 'chloride',
-            'paraben': 'paraben', 'parabcn': 'paraben', 'parasен': 'paraben',
-            'sulfate': 'sulfate', 'suifate': 'sulfate', 'sulphate': 'sulfate', 'suliate': 'sulfate',
-            'glycol': 'glycol', 'giycol': 'glycol', 'glyсol': 'glycol',
-            'alcohol': 'alcohol', 'aicohol': 'alcohol', 'alcohoI': 'alcohol', 'alcobol': 'alcohol',
-            'extract': 'extract', 'cxtract': 'extract', 'extгact': 'extract', 'exiract': 'extract',
-
-            # Acids
-            'citric': 'citric', 'cltric': 'citric', 'citгic': 'citric', 'cjtric': 'citric',
-            'ascorbic': 'ascorbic', 'ascorblc': 'ascorbic', 'ascorbіc': 'ascorbic',
-            'stearic': 'stearic', 'stcarlc': 'stearic', 'stearіc': 'stearic',
-            'palmitic': 'palmitic', 'palmitlc': 'palmitic', 'palmіtic': 'palmitic',
-            'oleic': 'oleic', '0leic': 'oleic', 'olelc': 'oleic', 'oleіc': 'oleic',
-            'linoleic': 'linoleic', 'llnoleic': 'linoleic', 'linolеic': 'linoleic',
-
-            # Preservatives
-            'phenoxyethanol': 'phenoxyethanol', 'phen0xyethanol': 'phenoxyethanol',
-            'phenoxyetbanol': 'phenoxyethanol', 'phenoxyethanoI': 'phenoxyethanol',
-            'benzyl': 'benzyl', 'benzyI': 'benzyl', 'bеnzyl': 'benzyl', 'benzyi': 'benzyl',
-            'fragrance': 'fragrance', 'fragrаnce': 'fragrance', 'fragranсe': 'fragrance',
-            'parfum': 'parfum', 'partiim': 'parfum', 'рarfum': 'parfum',
-
-            # Chemical abbreviations
-            'hci': 'hcl', 'hcі': 'hcl', 'нcl': 'hcl', 'hcj': 'hcl',
-            'edta': 'edta', 'еdta': 'edta', 'edтa': 'edta', 'eclta': 'edta',
-            'bht': 'bht', 'вht': 'bht', 'bнt': 'bht', 'bjt': 'bht',
-            'bha': 'bha', 'вha': 'bha', 'bнa': 'bha', 'bja': 'bha',
-            'peg': 'peg', 'рeg': 'peg', 'peг': 'peg', 'pеg': 'peg',
-            'ppg': 'ppg', 'рpg': 'ppg', 'ppг': 'ppg', 'ppq': 'ppg',
-            'pca': 'pca', 'рca': 'pca', 'pcа': 'pca',
-
-            # Botanical names
-            'aloe': 'aloe', 'al0e': 'aloe', 'aIoe': 'aloe', 'ajoe': 'aloe',
-            'vera': 'vera', 'vегa': 'vera', 'verа': 'vera', 'vеra': 'vera',
-            'chamomilla': 'chamomilla', 'charnomilla': 'chamomilla', 'chamomiІla': 'chamomilla',
-            'calendula': 'calendula', 'calеndula': 'calendula', 'calenduІa': 'calendula',
-            'lavandula': 'lavandula', 'lavаndula': 'lavandula', 'lavanduІa': 'lavandula',
-            'rosmarinus': 'rosmarinus', 'rosmaгinus': 'rosmarinus', 'rosmarіnus': 'rosmarinus',
-            'officinalis': 'officinalis', '0fficinalis': 'officinalis', 'officіnalis': 'officinalis',
-
-            # OCR number/letter confusions
-            'cio': 'c10', 'ci0': 'c10', 'c1o': 'c10', 'cjo': 'c10',
-            'c3o': 'c30', 'cзо': 'c30', 'eo': '30', 'e0': '30', '3o': '30'
-        }
-
-        # Apply word-level corrections
-        for wrong, correct in ingredient_corrections.items():
-            if wrong in corrected:
-                corrected = corrected.replace(wrong, correct)
-
-        # Character-level fixes (after word corrections)
-        char_fixes = {
-            'rn': 'm', 'nn': 'm', 'vv': 'w', 'ii': 'll', 'cl': 'd', 'di': 'cl',
-            '0': 'o', '1': 'i', '3': 'e', '5': 's', '6': 'g', '8': 'b',
-            'jl': 'll', 'il': 'll', 'rj': 'n', 'ij': 'n'
-        }
-
-        for wrong_chars, correct_char in char_fixes.items():
-            corrected = corrected.replace(wrong_chars, correct_char)
-
-        # Clean up malformed text
-        corrected = re.sub(r'\)\s*extract$', ' extract', corrected)
-        corrected = re.sub(r'^\([^)]*\)', '', corrected).strip()
-        corrected = re.sub(r'\s+', ' ', corrected).strip()
-
-        return corrected
 
 
 class OCRService:
@@ -143,17 +32,27 @@ class OCRService:
                 text_detection_model_name="PP-OCRv5_mobile_det",
                 text_recognition_model_name="PP-OCRv5_mobile_rec",
             )
-            self.spell_checker = SpellChecker()
             self._initialized = True
 
     def extract_ingredients_from_image(self, image):
         """Main method to extract ingredients from image"""
         try:
-            # Convert image to PIL if needed
-            if hasattr(image, 'shape'):
+            # Convert numpy array or PIL Image to raw PNG bytes
+            if hasattr(image, 'shape'):  # numpy array
                 pil_img = Image.fromarray(image)
             else:
                 pil_img = image
+
+            with BytesIO() as buf:
+                pil_img.save(buf, format='PNG')
+                image_bytes = buf.getvalue()
+
+            # Use PNG bytes to generate cache key
+            cache_key = f"ocr_ingredients:{generate_image_cache_key(image_bytes)}"
+            cached_ingredients = redis_client.get(cache_key)
+            if cached_ingredients:
+                logging.info("Returning cached OCR ingredients")
+                return json.loads(cached_ingredients)
 
             # Save to temporary file for OCR processing
             with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
@@ -174,6 +73,12 @@ class OCRService:
                 # Process and clean ingredients
                 cleaned_ingredients = self._process_ingredients(
                     ingredient_texts)
+
+                cleaned_ingredients = sorted(cleaned_ingredients)
+
+                if cleaned_ingredients and len(cleaned_ingredients) > 0:
+                    redis_client.set(cache_key, json.dumps(
+                        cleaned_ingredients), ex=604800)  # TTL 7 days
 
                 logger.info(
                     f"Processed {len(cleaned_ingredients)} ingredients with spell correction")
@@ -206,7 +111,7 @@ class OCRService:
             cleaned = self._clean_individual_ingredient(ingredient)
             if cleaned and self._is_valid_ingredient(cleaned):
                 # Apply spell correction
-                corrected = self.spell_checker.correct_ingredient(cleaned)
+                corrected = cleaned
                 # Restore proper formatting
                 formatted = self._format_ingredient_name(corrected)
                 cleaned_ingredients.append(formatted)
