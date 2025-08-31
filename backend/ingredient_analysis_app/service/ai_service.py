@@ -68,40 +68,47 @@ class AIAnalysisService:
         **STEP 1 – REFINE INGREDIENTS**
         - Normalize names: correct spelling, remove duplicates, unify capitalization.
         - Remove irrelevant tokens (numbers, symbols, non-ingredient words).
-        - Limit to the **12 most relevant ingredients**.
+        - Analyze all detected ingredients.
         - This refined list is used for all analysis.
 
-        ---
-
+        -**Critical Check:** For any `user_specific_risk`, you MUST verify if the ingredient is an exact match to an item in the user's provided `ALLERGIES` or `MEDICAL CONDITIONS` lists. Do not assume or invent allergies or conditions not explicitly listed. If the user's list for a category is empty (e.g., 'No allergy'), no alerts of that type can be flagged.
+        - **Contextual Relevance:** For `user_specific_risk` related to medical conditions (not allergies), you MUST also determine if the condition is relevant to the product category. For example, diabetes is highly relevant for food, but not for a generic face wash unless an ingredient is a known irritant for diabetic skin. If there is no plausible connection, do not include a health alert for that condition.
+        - **Important Consideration:** For the analysis to be truly valuable, you must consider the potential secondary or indirect impacts of ingredients. For instance, if the product is skincare and the user has diabetes, flag ingredients that might cause skin irritation or other issues that could be particularly problematic for a diabetic.
+ 
         **STEP 2 – DETAILED PER-INGREDIENT ANALYSIS**
         For each refined ingredient:
-        1. Determine safety status: "safe", "caution", or "danger".
+        1. Determine safety status: "safe", "caution", "danger", or "contains [Allergen]".
         2. Assign concern level: "low", "medium", "high".
         3. Identify **user-specific risk** from allergies or medical conditions.
-        4. Provide a **concise 1-line summary** of its impact on health/skin.
-        5. Explain why flagged if concerning; otherwise leave empty.
-        6. Ensure each ingredient gets its own entry in `"ingredients"`.
-
+        4. Provide a **concise 1-line summary** of its impact on health.
+        5. Explain why flagged in a clear sentence; if safe, leave empty.
+        6. Ensure every refined ingredient gets its own entry in `"ingredients"`.
+ 
         ---
 
         **STEP 3 – OVERALL ANALYSIS**
-        - Compute aggregated safety score (0–100) and safety level, .
-        - Provide main verdict and `should_use` boolean.
+        - Compute an aggregated safety score (0–100) that logically aligns with the final verdict:
+            - "recommend": score > 70
+            - "caution": score 30-70
+            - "avoid": score < 30
+        - Based on the score, assign a safety level ("safe", "caution", or "danger").
+        - Provide a `main_verdict` in 2-4 lines of simple, human-understandable language.
+        - Set the `should_use` boolean: `true` for "recommend", `false` for "caution" and "avoid".
         - Count total concerning ingredients.
-        - List max 5 serious health alerts in `"health_alerts"`.
-        - Suggest max 3-4 realistic, available alternatives.
-        - Give a **main_verdict** in 2-4 line with human understandable language in a simple
-        - if the product is caution then give proper **key advice** for user which has the allergie match or the medical history matches
-        - Give a 2-3 lines **key advice** for the user in a simple language so user can understand.
-
+        - The `should_use` boolean MUST be consistent with the verdict. `true` for "recommend", `false` for "caution" and "avoid".
+        - Count the total number of concerning ingredients.
+        - List all serious health alerts in `"health_alerts"`.
+        - Suggest max 3-4 real, commercially available alternative products (not just ingredients). These alternatives must be superior for the user, specifically addressing the flagged issues from the current analysis.
+        - Give a 2-3 line `key_advice` that is a simple, actionable recommendation for the user.
+ 
         ---
 
         **STEP 4 – RESPONSE FORMATTING**
         - Return ONLY JSON in the EXACT structure provided below.
         - Fill all fields with meaningful, accurate, and actionable content.
         - Ensure `"ingredients"` has individual entries for all refined ingredients.
-        - Include `"user_specific_risk": true` only if there is a real risk.
-        - Provide concise but informative messages in `"quick_summary"`, `"why_flagged"`, `"message"`, `"reason"`, and `"key_advice"`.
+        - `user_specific_risk` must be `true` ONLY if the ingredient is an exact match to a listed allergy or a relevant medical condition.
+        - Provide concise, informative messages in all fields.
         - Do not add markdown, explanations, or extra text.
 
         ---
@@ -119,11 +126,11 @@ class AIAnalysisService:
             "ingredients": [
                 {{
                     "name": "Refined Ingredient Name",
-                    "status": "safe | caution | danger",
+                    "status": "safe | caution | danger | contains [Allergen]",
                     "concern_level": "low | medium | high",
                     "user_specific_risk": true,
-                    "quick_summary": "Concise 1-line description of impact human understandable language",
-                    "why_flagged": "Reason for concern if flagged; leave empty if safe"
+                    "quick_summary": "Concise 1-line description of impact",
+                    "why_flagged": "Reason for concern if flagged"
                 }}
             ],
             "health_alerts": [
@@ -138,14 +145,14 @@ class AIAnalysisService:
             "recommendation": {{
                 "verdict": "recommend | caution | avoid",
                 "confidence": "high | medium | low",
-                "reason": "Short explanation for recommendation",
+                "reason": "Short explanation for the recommendation",
                 "safe_to_try": true
             }},
             "alternatives": [
                 {{
-                    "name": "Product/Brand Name",
-                    "why": "reason it's suggested",
-                    "benefit": "key benefit for user"
+                    "name": "Name of real, commercially available product",
+                    "why": "Reason it's a better alternative for this user",
+                    "benefit": "Key health benefit for the user"
                 }}
             ],
             "key_advice": "Most important single piece of advice for this user"
