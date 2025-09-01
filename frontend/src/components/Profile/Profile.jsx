@@ -255,9 +255,9 @@ const Profile = () => {
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
             {/* Profile Overview Card */}
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-2">
               <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden sticky top-8">
                 <div className="bg-gradient-to-r from-blue-500 to-indigo-600 px-6 py-8 text-center">
                   {/* Avatar Section */}
@@ -324,7 +324,7 @@ const Profile = () => {
             </div>
 
             {/* Main Content */}
-            <div className="lg:col-span-2 space-y-8">
+            <div className="lg:col-span-3 space-y-8">
               {/* Profile Form */}
               <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
                 <div className="bg-gradient-to-r from-slate-50 to-gray-50 px-8 py-6 border-b border-gray-200">

@@ -9,8 +9,8 @@ import Register from './components/Auth/Register';
 
 import Dashboard from './components/Dashboard/Dashboard';
 import Analyze from './components/Analysis/Analyze';
-import History from './components/Analysis/History';
-import AnalysisDetails from './components/Analysis/AnalysisDetails';
+import History from './components/History/History';
+import AnalysisDetails from './components/History/AnalysisDetails';
 import MedicalHistory from './components/Medical/MedicalHistory';
 import Profile from './components/Profile/Profile';
 
