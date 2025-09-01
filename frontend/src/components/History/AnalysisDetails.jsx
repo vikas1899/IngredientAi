@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import Navbar from '../Navbar';
 import { Trash2, Loader } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 
 const AnalysisDetails = () => {
@@ -142,18 +144,264 @@ const AnalysisDetails = () => {
     }
   };
 
-  const handleDownload = () => {
-    // Download functionality implementation
-    const blob = new Blob([JSON.stringify(analysis, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `analysis-${analysis.id}-${new Date(analysis.timestamp).toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+const handleDownload = () => {
+  // Initialize jsPDF document with point units and A4 size
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  // Margins for horizontal (X) and vertical (Y) padding
+  const marginX = 40;
+  const marginY = 40;
+
+  // Variable to track vertical position while drawing content
+  let cursorY = marginY;
+
+  // -- HEADER SECTION --
+  // Dark rectangle header background
+  doc.setFillColor(60, 60, 100);
+  doc.rect(0, 0, pageWidth, 50, 'F');
+
+  // Slightly lighter band below header for gradient effect
+  doc.setFillColor(100, 90, 150);
+  doc.rect(0, 50, pageWidth, 10, 'F');
+
+  // Header text centered, white, bold, large font
+  doc.setFontSize(22);
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Ingredient Analysis Report', pageWidth / 2, 35, { align: 'center' });
+
+  // Move cursor below header for next content
+  cursorY = 70;
+
+  // -- METADATA BOXES SECTION --
+  // Array of key metadata labels and their values
+  const metaData = [
+    { label: 'Category', value: analysis.category || 'N/A' },
+    { label: 'Analysis Date', value: new Date(analysis.timestamp).toLocaleDateString() },
+    { label: 'Safety Score', value: (parsedAnalysis.analysis_summary?.safety_score ?? 'N/A') + '%' },
+    { label: 'Health Alerts', value: parsedAnalysis.health_alerts?.length || 0 }
+  ];
+
+  // Calculate width of each metadata box with spacing
+  const boxWidth = (pageWidth - marginX * 2 - (metaData.length - 1) * 15) / metaData.length;
+  const boxHeight = 50;
+
+  // Set font style for labels
+  doc.setFontSize(12);
+  doc.setTextColor(60, 60, 60);
+  doc.setFont('helvetica', 'normal');
+
+  // Draw each metadata box with shadow and background, position horizontally
+  metaData.forEach((item, i) => {
+    const boxX = marginX + i * (boxWidth + 15);
+    const boxY = cursorY;
+
+    // Shadow effect (offset rectangle)
+    doc.setFillColor(240, 240, 250);
+    doc.roundedRect(boxX + 3, boxY + 3, boxWidth, boxHeight, 6, 6, 'F');
+
+    // Background rectangle (main box)
+    doc.setFillColor(250, 250, 255);
+    doc.roundedRect(boxX, boxY, boxWidth, boxHeight, 6, 6, 'F');
+
+    // Draw metadata label
+    doc.setTextColor(100, 100, 130);
+    doc.text(item.label, boxX + 12, boxY + 20);
+
+    // Draw metadata value in bold, darker color
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(40, 40, 90);
+    doc.text(item.value.toString(), boxX + 12, boxY + 40);
+  });
+
+  // Advance vertical cursor below metadata boxes with padding
+  cursorY += boxHeight + 30;
+
+  // -- LEGEND SECTION (Color code explanation) --
+  doc.setFontSize(14);
+  doc.setTextColor(60, 60, 100);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Legend - Ingredient Status Colors', marginX, cursorY);
+
+  // Legend entries with color boxes and descriptions
+  const legendItems = [
+    { label: 'SAFE', color: [198, 239, 206], description: 'Low risk, safe to use ingredients.' },
+    { label: 'CAUTION', color: [255, 235, 156], description: 'Medium risk, use with caution.' },
+    { label: 'DANGER', color: [255, 199, 206], description: 'High risk, avoid use if possible.' }
+  ];
+
+  const squareSize = 14; // Size of color square
+  let legendY = cursorY + 20; // Starting Y position for legend items
+  const maxDescWidth = pageWidth - marginX * 2 - 100; // Available width for description text
+
+  doc.setFontSize(11);
+  doc.setTextColor(0, 0, 0);
+  doc.setFont('helvetica', 'normal');
+
+  // Draw each legend color square, label, and wrapped description
+  legendItems.forEach(({ label, color, description }) => {
+    doc.setFillColor(...color);
+    doc.rect(marginX, legendY - squareSize + 3, squareSize, squareSize, 'F');
+
+    doc.text(label, marginX + squareSize + 8, legendY);
+
+    const wrappedDesc = doc.splitTextToSize(description, maxDescWidth);
+    doc.text(wrappedDesc, marginX + squareSize + 60, legendY);
+
+    // Increase vertical cursor based on wrapped description line count and line height
+    legendY += wrappedDesc.length * 14;
+  });
+
+  // Update cursorY for next section with padding
+  cursorY = legendY + 30;
+
+  // -- INGREDIENTS OVERVIEW --
+  doc.setFontSize(14);
+  doc.setTextColor(60, 60, 100);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Ingredients Overview', marginX, cursorY);
+
+  cursorY += 20;
+  doc.setFontSize(11);
+  doc.setTextColor(20, 20, 20);
+  doc.setFont('helvetica', 'normal');
+
+  // Join all ingredient names and wrap text to fit page width
+  const ingredientNames = parsedAnalysis.ingredients?.map(i => i.name).join(', ') || 'N/A';
+  const wrappedIngredients = doc.splitTextToSize(ingredientNames, pageWidth - marginX * 2);
+  doc.text(wrappedIngredients, marginX, cursorY);
+
+  // Advance cursorY by number of lines * line height + padding
+  cursorY += wrappedIngredients.length * 14 + 20;
+
+  // -- INGREDIENTS TABLE --
+  // Color mapping for status values
+  const statusColors = {
+    safe: [198, 239, 206],
+    caution: [255, 235, 156],
+    danger: [255, 199, 206],
+    default: [220, 220, 220]
   };
+
+  // Prepare table body with color-coded status cell background
+  const tableBody = parsedAnalysis.ingredients?.map(i => {
+    const fillColor = statusColors[i.status?.toLowerCase()] || statusColors.default;
+    return [
+      { content: i.name, styles: { fillColor: [255, 255, 255] } },
+      { content: i.status?.toUpperCase() || '', styles: { fillColor } },
+      { content: i.concern_level || '', styles: { fillColor: [255, 255, 255] } },
+      { content: i.quick_summary || '', styles: { fillColor: [255, 255, 255] } }
+    ];
+  }) || [];
+
+  // Draw table, update cursorY after table has been rendered
+  autoTable(doc, {
+    startY: cursorY,
+    margin: { left: marginX, right: marginX },
+    head: [['Ingredient', 'Status', 'Risk', 'Notes']],
+    body: tableBody,
+    headStyles: {
+      fillColor: [60, 60, 100],
+      textColor: 255,
+      fontStyle: 'bold'
+    },
+    alternateRowStyles: {
+      fillColor: [245, 245, 250]
+    },
+    styles: {
+      fontSize: 10,
+      cellPadding: 8,
+      valign: 'middle'
+    },
+    columnStyles: {
+      0: { cellWidth: 150 },
+      1: { cellWidth: 70, halign: 'center' },
+      2: { cellWidth: 70, halign: 'center' },
+      3: { cellWidth: pageWidth - marginX * 2 - 290 }
+    },
+    didDrawPage: (data) => {
+      // Update cursor position after table rendering for next section
+      cursorY = data.cursor.y + 30;
+    }
+  });
+
+  // -- AI RECOMMENDATION SECTION --
+  // Add new page if not enough space for recommendation box
+  if (cursorY + 80 > pageHeight - marginY) {
+    doc.addPage();
+    cursorY = marginY;
+  }
+
+  // Draw rounded rectangle background
+  doc.setFillColor(230, 240, 255);
+  doc.roundedRect(marginX, cursorY - 10, pageWidth - marginX * 2, 80, 10, 10, 'F');
+
+  // Recommendation section heading
+  doc.setFontSize(14);
+  doc.setTextColor(40, 60, 100);
+  doc.setFont('helvetica', 'bold');
+  doc.text('AI Recommendation', marginX + 12, cursorY + 20);
+
+  // Recommendation text with wrapping
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(20, 20, 20);
+
+  const recommendationText = parsedAnalysis.recommendation?.reason || 'No recommendation provided.';
+  const wrappedRecommendation = doc.splitTextToSize(recommendationText, pageWidth - marginX * 2 - 24);
+  doc.text(wrappedRecommendation, marginX + 12, cursorY + 40);
+
+  cursorY += 90;
+
+  // -- KEY ADVICE SECTION (optional) --
+  if (parsedAnalysis.key_advice) {
+    const adviceText = parsedAnalysis.key_advice;
+    const wrappedAdvice = doc.splitTextToSize(adviceText, pageWidth - marginX * 2 - 24);
+    const adviceHeight = wrappedAdvice.length * 14 + 30;
+
+    // Add new page if not enough space
+    if (cursorY + adviceHeight > pageHeight - marginY) {
+      doc.addPage();
+      cursorY = marginY;
+    }
+
+    // Rounded rectangle background
+    doc.setFillColor(255, 248, 220);
+    doc.roundedRect(marginX, cursorY - 10, pageWidth - marginX * 2, adviceHeight, 10, 10, 'F');
+
+    // Key advice heading
+    doc.setFontSize(14);
+    doc.setTextColor(130, 90, 10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Key Advice', marginX + 12, cursorY + 20);
+
+    // Advice text with wrapping
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(80, 50, 10);
+
+    doc.text(wrappedAdvice, marginX + 12, cursorY + 40);
+
+    cursorY += adviceHeight + 20;
+  }
+
+  // -- FOOTER SECTION (Page numbers) --
+  const pageCount = doc.internal.getNumberOfPages();
+  doc.setFontSize(9);
+  doc.setTextColor(150);
+
+  // Loop over each page and add page number centered at bottom
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 20, { align: 'center' });
+  }
+
+  // Finally, save/download the PDF with a dynamic filename including analysis ID and date
+  doc.save(`analysis-${analysis.id}-${new Date(analysis.timestamp).toISOString().split('T')[0]}.pdf`);
+};
+
 
   const handleShare = async () => {
     const shareData = {
