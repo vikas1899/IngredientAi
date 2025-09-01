@@ -1,5 +1,3 @@
-# medical_history/views/api_views.py
-
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -11,18 +9,33 @@ from ..serializers import MedicalHistorySerializer, MedicalHistoryCreateUpdateSe
 
 
 class MedicalHistoryAPIView(generics.RetrieveUpdateAPIView):
+    """
+    API view to manage Medical History for authenticated users.
+    Supports GET, POST, PUT, and PATCH methods with different serializers.
+    """
+
     serializer_class = MedicalHistorySerializer
     permission_classes = [IsAuthenticated]
 
     def get_object(self):
-        """Get or create medical history for the current user"""
+        """
+        Fetch the medical history for the current user.
+        If not present, automatically create an empty record.
+        Ensures every user has exactly one medical history entry.
+        """
+
         medical_history, created = MedicalHistory.objects.get_or_create(
             user=self.request.user
         )
         return medical_history
 
     def get_serializer_class(self):
-        """Use different serializers for different actions"""
+        """
+        Dynamically choose serializer:
+        - Use create/update serializer for write operations (POST, PUT, PATCH).
+        - Use read-only serializer for read operations (GET).
+        """
+
         if self.request.method in ['POST', 'PUT', 'PATCH']:
             return MedicalHistoryCreateUpdateSerializer
         return MedicalHistorySerializer
@@ -32,6 +45,7 @@ class MedicalHistoryAPIView(generics.RetrieveUpdateAPIView):
         description="Retrieve the medical history for the authenticated user"
     )
     def get(self, request, *args, **kwargs):
+        # Uses parent RetrieveUpdateAPIView GET behavior
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
@@ -48,7 +62,12 @@ class MedicalHistoryAPIView(generics.RetrieveUpdateAPIView):
         ]
     )
     def post(self, request, *args, **kwargs):
-        # Check if medical history already exists
+        """
+        Create a new medical history for the user.
+        - Reject if a record already exists (enforces one-to-one relationship).
+        - Returns full response with computed fields.
+        """
+
         if hasattr(request.user, 'medicalhistory'):
             return Response({
                 'error': 'Medical history already exists. Use PUT to update.'
@@ -57,7 +76,7 @@ class MedicalHistoryAPIView(generics.RetrieveUpdateAPIView):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             serializer.save(user=request.user)
-            # Return the full serializer with computed fields
+            # Return full details using read-only serializer
             response_serializer = MedicalHistorySerializer(
                 serializer.instance,
                 context={'request': request}
@@ -82,11 +101,17 @@ class MedicalHistoryAPIView(generics.RetrieveUpdateAPIView):
         ]
     )
     def put(self, request, *args, **kwargs):
+        """
+        Fully update the medical history for the current user.
+        - Requires all fields in the request body.
+        - Returns updated record with computed fields.
+        """
+
         medical_history = self.get_object()
         serializer = self.get_serializer(medical_history, data=request.data)
         if serializer.is_valid():
             serializer.save()
-            # Return the full serializer with computed fields
+
             response_serializer = MedicalHistorySerializer(
                 serializer.instance,
                 context={'request': request}
@@ -102,6 +127,12 @@ class MedicalHistoryAPIView(generics.RetrieveUpdateAPIView):
         description="Partially update the medical history for the authenticated user"
     )
     def patch(self, request, *args, **kwargs):
+        """
+        Partially update medical history.
+        - Allows updating a subset of fields (allergies/diseases).
+        - Returns updated record with computed fields.
+        """
+
         medical_history = self.get_object()
         serializer = self.get_serializer(
             medical_history,
@@ -110,7 +141,7 @@ class MedicalHistoryAPIView(generics.RetrieveUpdateAPIView):
         )
         if serializer.is_valid():
             serializer.save()
-            # Return the full serializer with computed fields
+
             response_serializer = MedicalHistorySerializer(
                 serializer.instance,
                 context={'request': request}
@@ -123,6 +154,11 @@ class MedicalHistoryAPIView(generics.RetrieveUpdateAPIView):
 
 
 class CheckMedicalHistoryAPIView(APIView):
+    """
+    API endpoint to check if a medical history record exists for the authenticated user.
+    Useful for frontend apps to decide whether to show create or update UI.
+    """
+
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
@@ -139,7 +175,12 @@ class CheckMedicalHistoryAPIView(APIView):
         }
     )
     def get(self, request):
-        """Check if user has medical history"""
+        """
+        Return a boolean flag along with a descriptive message:
+        - True if the user has an existing record.
+        - False otherwise.
+        """
+
         has_medical_history = hasattr(request.user, 'medicalhistory')
 
         return Response({
