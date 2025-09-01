@@ -1,8 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { apiService } from '../services/apiService';
 
+// Create the AuthContext
 const AuthContext = createContext();
 
+// Custom hook to access AuthContext values
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -11,22 +13,26 @@ export const useAuth = () => {
   return context;
 };
 
+// AuthProvider component that wraps the app and manages authentication state
 export const AuthProvider = ({ children }) => {
+  // State for user details, loading status, and auth status
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  // Run once on mount → check if user is already logged in (token in localStorage)
   useEffect(() => {
     const initAuth = async () => {
       const token = localStorage.getItem('access_token');
       if (token) {
         try {
+          // Fetch user profile using stored token
           const response = await apiService.getProfile();
           if (response.success) {
             setUser(response.data);
             setIsAuthenticated(true);
           } else {
-            // Token might be invalid, clear it
+            // If token invalid → clear tokens
             localStorage.removeItem('access_token');
             localStorage.removeItem('refresh_token');
           }
@@ -36,23 +42,24 @@ export const AuthProvider = ({ children }) => {
           localStorage.removeItem('refresh_token');
         }
       }
-      setLoading(false);
+      setLoading(false); // Auth check finished
     };
 
     initAuth();
   }, []);
 
+  // Login function
   const login = async (credentials) => {
     try {
       const response = await apiService.login(credentials);
       if (response.success) {
         const { access, refresh, ...userData } = response.data;
         
-        // Store tokens
+        // Save tokens in localStorage
         localStorage.setItem('access_token', access);
         localStorage.setItem('refresh_token', refresh);
         
-        // Set user data
+        // Save user data to state
         setUser(userData);
         setIsAuthenticated(true);
         
@@ -65,11 +72,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Register function (auto-logs in user after registration)
   const register = async (userData) => {
     try {
       const response = await apiService.register(userData);
       if (response.success) {
-        // After successful registration, automatically log in
+        // Automatically login with provided credentials
         const loginResult = await login({
           username: userData.username,
           password: userData.password
@@ -83,12 +91,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Logout function
   const logout = async () => {
     try {
-      await apiService.logout();
+      await apiService.logout(); // Call API to invalidate session
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
+      // Always clear state & tokens locally
       setUser(null);
       setIsAuthenticated(false);
       localStorage.removeItem('access_token');
@@ -96,11 +106,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Update user profile
   const updateProfile = async (userData) => {
     try {
       const response = await apiService.updateProfile(userData);
       if (response.success) {
-        setUser(response.data);
+        setUser(response.data); // Update state with new profile data
         return { success: true };
       } else {
         return { success: false, error: response.error };
@@ -110,6 +121,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Values provided to the whole app
   const value = {
     user,
     loading,
