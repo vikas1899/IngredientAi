@@ -1,10 +1,23 @@
 import redis
 import hashlib
 import json
+from dotenv import load_dotenv
+import os
 
-# Initialize Redis client (adjust host and port if needed)
+load_dotenv()
+
+# Reading Redis config from environment variables
+REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
+REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
+REDIS_DB = int(os.getenv('REDIS_DB', 0))
+
+# Initialize Redis client
 redis_client = redis.StrictRedis(
-    host='localhost', port=6379, db=0, decode_responses=True)
+    host=REDIS_HOST,
+    port=REDIS_PORT,
+    db=REDIS_DB,
+    decode_responses=True
+)
 
 
 def generate_cache_key(image_file, category, allergies, diseases):
@@ -13,7 +26,7 @@ def generate_cache_key(image_file, category, allergies, diseases):
     allergies, and diseases with consistent ordering.
     """
     image_content = image_file.read()
-    image_file.seek(0)  # reset file pointer for reuse
+    image_file.seek(0)
 
     combined = (
         image_content +
