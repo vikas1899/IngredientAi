@@ -21,35 +21,69 @@ const Dashboard = () => {
     loadDashboardData();
   }, []);
 
-  const loadDashboardData = async () => {
+  const parseAnalysisResult = (result) => {
+  if (!result) return { status: 'safe' };
+  if (typeof result === 'string') {
     try {
-      // Check medical history
-      const medicalCheck = await apiService.checkMedicalHistory();
-      if (medicalCheck.success) {
-        setHasMedicalHistory(medicalCheck.data.has_medical_history);
+      const parsed = JSON.parse(result);
+      return parseAnalysisResult(parsed);
+    } catch {
+      const lower = result.toLowerCase();
+      if (lower.includes('avoid') || lower.includes('danger') || lower.includes('not recommended')) {
+        return { status: 'danger' };
       }
-
-      // Get recent analysis history
-      const historyResponse = await apiService.getAnalysisHistory(1);
-      if (historyResponse.success) {
-        const analyses = historyResponse.data.results || [];
-        setRecentAnalyses(analyses.slice(0, 5)); // Show only 5 recent analyses
-        
-        // Calculate stats
-        setStats({
-          totalAnalyses: historyResponse.data.count || 0,
-          recentAnalyses: analyses.length,
-          riskWarnings: analyses.filter(analysis => 
-            analysis.result && analysis.result.toLowerCase().includes('warning')
-          ).length
-        });
+      if (lower.includes('caution') || lower.includes('moderate')) {
+        return { status: 'caution' };
       }
-    } catch (error) {
-      console.error('Error loading dashboard data:', error);
-    } finally {
-      setLoading(false);
+      return { status: 'safe' };
     }
-  };
+  }
+  if (typeof result === 'object') {
+    const verdict = result.recommendation?.verdict;
+    if (verdict === 'avoid') return { status: 'danger' };
+    if (verdict === 'caution') return { status: 'caution' };
+    return { status: 'safe' };
+  }
+  return { status: 'safe' };
+};
+
+const loadDashboardData = async () => {
+  try {
+    const medicalCheck = await apiService.checkMedicalHistory();
+    if (medicalCheck.success) setHasMedicalHistory(medicalCheck.data.has_medical_history);
+
+    const historyResponse = await apiService.getAnalysisHistory(1);
+    if (historyResponse.success) {
+      const analyses = historyResponse.data.results || [];
+      setRecentAnalyses(analyses.slice(0, 5));
+
+      // Calculate total analyses
+      const totalAnalyses = historyResponse.data.count || 0;
+
+      // Calculate recent analyses within last 1 day
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 1);
+      const recentAnalysesCount = analyses.filter(a => new Date(a.timestamp) >= sevenDaysAgo).length;
+
+      // Calculate risk warnings based on parsed status
+      const riskWarningsCount = analyses.filter(a => {
+        const { status } = parseAnalysisResult(a.result);
+        return status === 'danger' || status === 'caution';
+      }).length;
+
+      setStats({
+        totalAnalyses,
+        recentAnalyses: recentAnalysesCount,
+        riskWarnings: riskWarningsCount,
+      });
+    }
+  } catch (error) {
+    console.error('Error loading dashboard data:', error);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
