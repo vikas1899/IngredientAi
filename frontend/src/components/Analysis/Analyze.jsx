@@ -141,7 +141,7 @@ const Analyze = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedFile, category, previewUrl]);
+  }, [selectedFile, category,previewUrl]);
 
   // Resets for starting a new analysis
   const startNewAnalysis = useCallback(() => {

@@ -2,7 +2,7 @@ import React from 'react';
 import {
   CheckCircle, AlertTriangle, Lightbulb, Eye, Zap, Target, Camera, Activity, Brain, Shield,
   ThumbsUp, ThumbsDown, TrendingUp, Award, Package, Star, Info, AlertCircle, RotateCcw, History,
-  XCircle, Heart, Pill, Sparkles,Clock
+  XCircle, Heart, Pill, Sparkles,Clock,FileImage   
 } from 'lucide-react';
 
 // Helper functions for styling and icons based on status or severity

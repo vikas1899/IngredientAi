@@ -1,10 +1,11 @@
-from ..utils.cache_utils import redis_client, generate_cache_key
+from ..utils.cache_utils import redis_client, generate_cache_key, generate_image_cache_key
 import json
 import logging
 import numpy as np
 from PIL import Image
 from .ocr_service import ocr_service
 from .ai_service import ai_service
+import cloudinary.uploader
 
 logger = logging.getLogger(__name__)
 
@@ -15,11 +16,22 @@ class IngredientAnalysisService:
     @staticmethod
     def analyze_image(image_file, category, user):
         try:
+            image_file.seek(0)
+            image_content = image_file.read()
+            image_file.seek(0)
+
+            image_hash = generate_image_cache_key(image_content)
+
+            # Upload image to Cloudinary
+            upload_result = cloudinary.uploader.upload(image_file)
+            image_url = upload_result.get('url')
+            public_id = upload_result.get('public_id')
+
             allergies, diseases = IngredientAnalysisService._get_user_medical_history(
                 user)
 
             # Generate unique cache key
-            cache_key = f"ingredient_analysis:{generate_cache_key(image_file, category, allergies, diseases)}"
+            cache_key = f"ingredient_analysis:{generate_cache_key(image_hash, category, allergies, diseases)}"
 
             # Check Redis cache
             cached_result = redis_client.get(cache_key)
@@ -50,13 +62,17 @@ class IngredientAnalysisService:
                 response_obj = {
                     'success': True,
                     'result': analysis_result,
-                    'extracted_ingredients': extracted_ingredients
+                    'extracted_ingredients': extracted_ingredients,
+                    'image_url': image_url,
+                    'public_id': public_id
                 }
                 redis_client.set(cache_key, json.dumps(
                     response_obj), ex=604800)  # TTL 7 days
 
                 return response_obj
             else:
+                # Delete the uploaded image if the analysis fails
+                cloudinary.uploader.destroy(public_id)
                 return {
                     'success': False,
                     'error': analysis_result.get('key_advice', 'Unable to process ingredients from image'),

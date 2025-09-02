@@ -20,16 +20,14 @@ redis_client = redis.StrictRedis(
 )
 
 
-def generate_cache_key(image_file, category, allergies, diseases):
+def generate_cache_key(identifier, category, allergies, diseases):
     """
     Generate a unique Redis cache key for given image content, category,
     allergies, and diseases with consistent ordering.
     """
-    image_content = image_file.read()
-    image_file.seek(0)
 
     combined = (
-        image_content +
+        identifier.encode("utf-8") +
         category.encode("utf-8") +
         json.dumps(allergies, sort_keys=True).encode("utf-8") +
         json.dumps(diseases, sort_keys=True).encode("utf-8")

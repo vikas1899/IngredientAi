@@ -145,7 +145,7 @@ class AnalyzeIngredientsAPIView(APIView):
             analysis = IngredientAnalysis.objects.create(
                 user=request.user,
                 category=category,
-                image=image,
+                image=f"v1/{analysis_result['public_id']}",
                 result=json.dumps(analysis_result['result'])
             )
 

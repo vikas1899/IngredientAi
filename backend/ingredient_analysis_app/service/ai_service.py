@@ -44,7 +44,6 @@ class AIAnalysisService:
 
     def _create_prompt_template(self):
         """Create the prompt template for ingredient analysis"""
-
         system_template = """You are an expert health advisor analyzing {category} ingredients for a user with:
         🔴 ALLERGIES: {allergies}
         🔴 MEDICAL CONDITIONS: {diseases}
@@ -86,7 +85,7 @@ class AIAnalysisService:
         - The `should_use` boolean MUST be consistent with the verdict. `true` for "recommend", `false` for "caution" and "avoid".
         - Count the total number of concerning ingredients.
         - List all serious health alerts in `"health_alerts"`.
-        - Suggest max 3-4 real, commercially available alternative products (not just ingredients). These alternatives must be superior for the user, specifically addressing the flagged issues from the current analysis.
+        - Suggest max 3-4 real, commercially available indian region alternative products (not just ingredients). These alternatives must be superior for the user, specifically addressing the flagged issues from the current analysis.
         - Give a 2-3 line `key_advice` that is a simple, actionable recommendation for the user.
 
         ---
@@ -105,7 +104,7 @@ class AIAnalysisService:
         {{
             "no_valid_ingredients": false,
             "analysis_summary": {{
-                "safety_score": 85,
+                "safety_score": 0-100,
                 "safety_level": "safe",
                 "should_use": true,
                 "main_verdict": "Overall safe with minor cautions; suitable for most users",
