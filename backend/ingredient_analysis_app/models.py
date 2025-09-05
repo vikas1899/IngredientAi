@@ -9,7 +9,7 @@ import cloudinary
 class IngredientAnalysis(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     category = models.CharField(max_length=100)
-    image = CloudinaryField('image', blank=True, null=True)
+    image = CloudinaryField('image')
     result = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
 

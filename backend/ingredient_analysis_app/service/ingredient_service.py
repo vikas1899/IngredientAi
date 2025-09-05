@@ -1,17 +1,16 @@
-from ..utils.cache_utils import redis_client, generate_cache_key, generate_image_cache_key
 import json
 import logging
-import numpy as np
+import hashlib
 from PIL import Image
-from .ocr_service import ocr_service
-from .ai_service import ai_service
 import cloudinary.uploader
+from ..utils.cache_utils import redis_client, generate_image_cache_key
+from .ai_service import ai_service
 
 logger = logging.getLogger(__name__)
 
 
 class IngredientAnalysisService:
-    """Main service coordinating OCR and AI analysis"""
+    """Main service coordinating AI analysis"""
 
     @staticmethod
     def analyze_image(image_file, category, user):
@@ -27,42 +26,34 @@ class IngredientAnalysisService:
             image_url = upload_result.get('url')
             public_id = upload_result.get('public_id')
 
-            allergies, diseases = IngredientAnalysisService._get_user_medical_history(
+            user_profile = IngredientAnalysisService._get_user_medical_history(
                 user)
 
-            # Generate unique cache key
-            cache_key = f"ingredient_analysis:{generate_cache_key(image_hash, category, allergies, diseases)}"
+            # Generate unique cache key based on the full profile
+            cache_key_str = image_hash + category + \
+                json.dumps(user_profile, sort_keys=True)
+            cache_key = f"ingredient_analysis:{hashlib.sha256(cache_key_str.encode()).hexdigest()}"
 
             # Check Redis cache
             cached_result = redis_client.get(cache_key)
             if cached_result:
                 return json.loads(cached_result)
 
-            # Normal processing
-            img = Image.open(image_file)
-            img_array = np.array(img)
-            extracted_ingredients = ocr_service.extract_ingredients_from_image(
-                img_array)
-            ingredients_text = ", ".join(
-                extracted_ingredients) if extracted_ingredients else "No text detected"
-
+            # Directly pass the image and the full user profile to the AI service
             analysis_result = ai_service.analyze_ingredients(
-                ingredients_text=ingredients_text,
+                image_file=image_file,
                 category=category,
-                allergies=allergies,
-                diseases=diseases
+                user_profile=user_profile
             )
 
             # Cache only successful analyses with 7-day TTL
             if not analysis_result.get('no_valid_ingredients', False):
                 analysis_result["metadata"] = {
-                    "extracted_ingredients": extracted_ingredients,
                     "status": "completed"
                 }
                 response_obj = {
                     'success': True,
                     'result': analysis_result,
-                    'extracted_ingredients': extracted_ingredients,
                     'image_url': image_url,
                     'public_id': public_id
                 }
@@ -88,22 +79,32 @@ class IngredientAnalysisService:
 
     @staticmethod
     def _get_user_medical_history(user):
-        """Extract user's medical history safely"""
-        try:
-            if hasattr(user, 'medicalhistory') and user.medicalhistory:
-                allergies = user.medicalhistory.allergies.split(
-                    ',') if user.medicalhistory.allergies else ["No allergy"]
-                diseases = user.medicalhistory.diseases.split(
-                    ',') if user.medicalhistory.diseases else ["No disease"]
-            else:
-                allergies = ["No allergy"]
-                diseases = ["No disease"]
-        except Exception as e:
-            logger.warning(f"Could not retrieve medical history: {str(e)}")
-            allergies = ["No allergy"]
-            diseases = ["No disease"]
-
-        return allergies, diseases
+        """Extract user's full medical profile safely"""
+        profile = {
+            "allergies": ["No allergies specified"],
+            "diseases": ["No diseases specified"],
+            "age": None,
+            "life_stage": "",
+            "dietary_preferences": [],
+            "medications": [],
+            "skin_type": "",
+            "health_goals": [],
+            "region": ""
+        }
+        if hasattr(user, 'medicalhistory') and user.medicalhistory:
+            history = user.medicalhistory
+            profile.update({
+                "allergies": [a.strip() for a in history.allergies.split(',')] if history.allergies else [],
+                "diseases": [d.strip() for d in history.diseases.split(',')] if history.diseases else [],
+                "age": history.age,
+                "life_stage": history.life_stage,
+                "dietary_preferences": [p.strip() for p in history.dietary_preferences.split(',')] if history.dietary_preferences else [],
+                "medications": [m.strip() for m in history.medications.split(',')] if history.medications else [],
+                "skin_type": history.skin_type,
+                "health_goals": [g.strip() for g in history.health_goals.split(',')] if history.health_goals else [],
+                "region": history.region
+            })
+        return profile
 
     @staticmethod
     def get_analysis_summary(analysis_result):
