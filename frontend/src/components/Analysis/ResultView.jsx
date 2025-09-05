@@ -2,57 +2,61 @@ import React from 'react';
 import {
   CheckCircle, AlertTriangle, Lightbulb, Eye, Zap, Target, Camera, Activity, Brain, Shield,
   ThumbsUp, ThumbsDown, TrendingUp, Award, Package, Star, Info, AlertCircle, RotateCcw, History,
-  XCircle, Heart, Pill, Sparkles,Clock,FileImage   
+  XCircle, Heart, Pill, Sparkles, Clock, FileImage,
+  Beaker, ChevronsDown, Leaf, Hash, Calendar, Users, Trash2, Loader, ArrowLeft, Download, Share, FileText,
+  AlertOctagon
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom'; // TODO: Import if used
+import useApiService from '../../services/apiService'; // TODO: Import if used
 
-// Helper functions for styling and icons based on status or severity
+/**
+ * **ALERT**: This component assumes flat `ingredients` array in result. If you use `ingredient_groups`,
+ * add a mapping loop before rendering (see `AnalysisDetails` for working example).
+ **/
+
+// Visual helpers: align to AnalysisDetails conventions
 const getStatusColor = (status) => {
-  switch(status) {
-    case 'safe': return 'text-green-700 bg-green-50 border-green-200';
-    case 'caution': return 'text-yellow-700 bg-yellow-50 border-yellow-200';
-    case 'danger': return 'text-red-700 bg-red-50 border-red-200';
-    default: return 'text-gray-700 bg-gray-50 border-gray-200';
+  switch (status) {
+    case 'safe': return 'bg-emerald-50 border-emerald-200 text-emerald-800';
+    case 'caution': return 'bg-amber-50 border-amber-200 text-amber-800';
+    case 'danger': return 'bg-red-50 border-red-200 text-red-800';
+    default: return 'bg-gray-50 border-gray-200 text-gray-800';
   }
 };
-
-const getStatusIcon = (status) => {
-  switch(status) {
-    case 'safe': return <CheckCircle className="h-5 w-5" />;
-    case 'caution': return <AlertTriangle className="h-5 w-5" />;
-    case 'danger': return <XCircle className="h-5 w-5" />;
-    default: return <Info className="h-5 w-5" />;
+const getStatusIcon = (status, size = 5) => {
+  switch (status) {
+    case 'safe': return <CheckCircle className={`h-${size} w-${size} text-emerald-600`} />;
+    case 'caution': return <AlertTriangle className={`h-${size} w-${size} text-amber-600`} />;
+    case 'danger': return <XCircle className={`h-${size} w-${size} text-red-600`} />;
+    default: return <Info className={`h-${size} w-${size} text-gray-600`} />;
   }
 };
-
 const getSeverityColor = (severity) => {
-  switch(severity) {
-    case 'low': return 'text-green-800 bg-green-100 border-green-300';
-    case 'medium': return 'text-yellow-800 bg-yellow-100 border-yellow-300';
-    case 'high': return 'text-red-800 bg-red-100 border-red-300';
-    default: return 'text-gray-800 bg-gray-100 border-gray-300';
+  switch (severity) {
+    case 'low': return 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 border-l-4 border-l-blue-400';
+    case 'medium': return 'bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-200 border-l-4 border-l-amber-400';
+    case 'high': return 'bg-gradient-to-r from-red-50 to-orange-50 border-red-200 border-l-4 border-l-red-400';
+    default: return 'bg-gradient-to-r from-gray-50 to-slate-50 border-gray-200 border-l-4 border-l-gray-400';
   }
 };
-
-const getVerdictStyle = (verdict) => {
-  switch(verdict) {
-    case 'recommend': return 'bg-green-500 text-white border-green-600';
-    case 'caution': return 'bg-yellow-500 text-white border-yellow-600';
+const getVerdictPill = (verdict) => {
+  switch (verdict) {
+    case 'recommend': return 'bg-emerald-500 text-white border-emerald-600';
+    case 'caution': return 'bg-amber-500 text-white border-amber-600';
     case 'avoid': return 'bg-red-500 text-white border-red-600';
     default: return 'bg-gray-500 text-white border-gray-600';
   }
 };
-
 const getSafetyLevelColor = (level) => {
-  switch(level) {
-    case 'safe': return 'text-green-600';
-    case 'caution': return 'text-yellow-600';
+  switch (level) {
+    case 'safe': return 'text-emerald-600';
+    case 'caution': return 'text-amber-600';
     case 'danger': return 'text-red-600';
     default: return 'text-gray-600';
   }
 };
-
 const getAlertIcon = (type) => {
-  switch(type) {
+  switch (type) {
     case 'allergy_match': return <AlertTriangle className="h-5 w-5" />;
     case 'condition_risk': return <Heart className="h-5 w-5" />;
     case 'interaction_warning': return <Pill className="h-5 w-5" />;
@@ -60,66 +64,52 @@ const getAlertIcon = (type) => {
   }
 };
 
-// Render legacy results when analysis result is a string
+// Empty/legacy state rendering, with tips as in AnalysisDetails
 const renderLegacyAnalysisResult = (analysisText) => {
   if (!analysisText || typeof analysisText !== 'string') {
     return (
       <div className="text-center py-8">
-        <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-        <h4 className="text-xl font-semibold text-green-800 mb-2">
-          Analysis Completed Successfully
-        </h4>
-        <p className="text-green-700">Your ingredient analysis has been processed.</p>
+        <CheckCircle className="h-16 w-16 text-emerald-500 mx-auto mb-4" />
+        <h4 className="text-xl font-semibold text-emerald-800 mb-2">Analysis Completed Successfully</h4>
+        <p className="text-emerald-700">Your ingredient analysis has been processed.</p>
       </div>
     );
   }
   if (analysisText.toLowerCase().includes('no valid ingredients are detected')) {
     return (
       <div className="text-center py-12">
-        <AlertCircle className="h-16 w-16 text-amber-400 mx-auto mb-6" />
-        <h4 className="text-2xl font-semibold text-amber-800 mb-4">
-          No Ingredients Detected
-        </h4>
+        <AlertCircle className="h-16 w-16 text-amber-500 mx-auto mb-6" />
+        <h4 className="text-2xl font-semibold text-amber-800 mb-4">No Ingredients Detected</h4>
         <p className="text-amber-700 leading-relaxed mb-6 max-w-2xl mx-auto">{analysisText}</p>
         <div className="p-6 bg-amber-50 rounded-2xl border border-amber-200 max-w-2xl mx-auto">
           <h5 className="font-bold text-amber-800 mb-4 flex items-center justify-center">
-            <Lightbulb className="h-5 w-5 mr-2" />
-            Tips to improve results:
+            <Lightbulb className="h-5 w-5 mr-2" />Tips
           </h5>
           <ul className="text-sm text-amber-700 space-y-2">
-            <li className="flex items-center"><Eye className="h-4 w-4 mr-2" />Ensure the image shows clear ingredient text</li>
-            <li className="flex items-center"><Target className="h-4 w-4 mr-2" />Check that the product category matches your image</li>
-            <li className="flex items-center"><Zap className="h-4 w-4 mr-2" />Try better lighting or higher resolution image</li>
-            <li className="flex items-center"><Camera className="h-4 w-4 mr-2" />Make sure text is not blurry or cut off</li>
+            <li className="flex items-center"><Eye className="h-4 w-4 mr-2" />Ensure image shows clear ingredient text</li>
+            <li className="flex items-center"><Target className="h-4 w-4 mr-2" />Check product category matches image</li>
+            <li className="flex items-center"><Zap className="h-4 w-4 mr-2" />Use better lighting or higher resolution</li>
+            <li className="flex items-center"><Camera className="h-4 w-4 mr-2" />Avoid blur and cropping the text</li>
           </ul>
         </div>
       </div>
     );
   }
-
-  // Render plain string results in a styled box
   return (
     <div className="bg-white rounded-2xl p-6 border border-gray-200">
       <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-        <FileImage className="h-5 w-5 mr-2" />
-        Analysis Results
+        <FileImage className="h-5 w-5 mr-2" />Analysis Results
       </h4>
       <div className="prose prose-sm max-w-none text-gray-700">
-        {analysisText.split('\n').map((line, index) => (
-          <p key={index} className="mb-2">{line}</p>
-        ))}
+        {analysisText.split('\n').map((line, index) => <p key={index} className="mb-2">{line}</p>)}
       </div>
     </div>
   );
 };
 
-// Render detailed JSON-based analysis results
+// Structured JSON result renderer—emulates AnalysisDetails section layout
 const renderJsonAnalysisResult = (analysisResult) => {
-  if (!analysisResult || typeof analysisResult === 'string') {
-    return renderLegacyAnalysisResult(analysisResult);
-  }
-
-  // Destructure expected details from analysis JSON
+  if (!analysisResult || typeof analysisResult === 'string') return renderLegacyAnalysisResult(analysisResult);
   const {
     no_valid_ingredients,
     analysis_summary = {},
@@ -130,380 +120,316 @@ const renderJsonAnalysisResult = (analysisResult) => {
     key_advice
   } = analysisResult;
 
-  // Handle case when no valid ingredients detected
-  if (no_valid_ingredients) {
-    return (
-      <div className="text-center py-16">
-        <div className="bg-gradient-to-br from-amber-100 to-orange-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
-          <AlertTriangle className="h-12 w-12 text-amber-600" />
-        </div>
-        <h4 className="text-3xl font-bold text-amber-800 mb-6">
-          Processing Issue Detected
-        </h4>
-        <div className="max-w-2xl mx-auto">
-          <p className="text-lg text-amber-700 leading-relaxed mb-8">
-            {key_advice || "Could not process the image clearly. Please try again with better lighting and ensure the ingredient list is clearly visible."}
-          </p>
-          <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-6 border border-amber-200">
-            <h5 className="font-bold text-amber-800 mb-4 flex items-center text-lg">
-              <Lightbulb className="h-5 w-5 mr-3" />
-              Tips to improve results:
-            </h5>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-amber-700">
-              <div className="flex items-start space-x-2">
-                <Eye className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <span>Ensure clear, readable ingredient text</span>
-              </div>
-              <div className="flex items-start space-x-2">
-                <Zap className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <span>Use proper lighting and focus</span>
-              </div>
-              <div className="flex items-start space-x-2">
-                <Target className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <span>Verify correct product category</span>
-              </div>
-              <div className="flex items-start space-x-2">
-                <Camera className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <span>Try a higher resolution image</span>
-              </div>
-            </div>
+  // No ingredient case, same UX as AnalysisDetails
+  if (no_valid_ingredients) return (
+    <div className="text-center py-16">
+      <div className="bg-gradient-to-br from-amber-100 to-orange-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
+        <AlertTriangle className="h-12 w-12 text-amber-600" />
+      </div>
+      <h4 className="text-3xl font-bold text-amber-800 mb-6">Processing Issue Detected</h4>
+      <div className="max-w-2xl mx-auto">
+        <p className="text-lg text-amber-700 leading-relaxed mb-8">
+          {key_advice || "Could not process the image clearly. Please try again with better lighting and ensure the ingredient list is visible."}
+        </p>
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-6 border border-amber-200">
+          <h5 className="font-bold text-amber-800 mb-4 flex items-center text-lg">
+            <Lightbulb className="h-5 w-5 mr-3" />Tips
+          </h5>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-amber-700">
+            <div className="flex items-start space-x-2"><Eye className="h-4 w-4 mt-0.5 flex-shrink-0" /><span>Ensure clear text</span></div>
+            <div className="flex items-start space-x-2"><Zap className="h-4 w-4 mt-0.5 flex-shrink-0" /><span>Use good lighting</span></div>
+            <div className="flex items-start space-x-2"><Target className="h-4 w-4 mt-0.5 flex-shrink-0" /><span>Verify category</span></div>
+            <div className="flex items-start space-x-2"><Camera className="h-4 w-4 mt-0.5 flex-shrink-0" /><span>Higher resolution</span></div>
           </div>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
 
-  // Extract analysis summary metrics
   const safetyScore = analysis_summary.safety_score || 0;
   const safetyLevel = analysis_summary.safety_level || 'unknown';
-  const concernCount = analysis_summary.concern_count || 0;
-
-  // Filter health alerts ignoring 'none' type
-  const filteredHealthAlerts = health_alerts?.filter(alert => alert.type !== 'none') || [];
+  const concernCount = analysis_summary.concern_count ?? 0;
+  const filteredHealthAlerts = health_alerts?.filter(a => a.type !== 'none') || [];
 
   return (
-    <div className="space-y-10">
-      {/* Analysis Summary Card */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-3xl border border-blue-200 shadow-xl">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-blue-200/30 to-transparent rounded-full transform translate-x-16 -translate-y-16"></div>
-        <div className="relative p-8">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-2xl font-bold text-gray-900 flex items-center">
-              <div className="bg-blue-500 rounded-xl p-2 mr-4">
-                <Activity className="h-6 w-6 text-white" />
+    <div className="space-y-8">
+      {/* Summary Card: Safety Score, Concerns, Verdict */}
+      <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 p-8">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl flex items-center justify-center shadow-lg">
+            <Target className="h-6 w-6 text-white" />
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900">Analysis Summary</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-xl p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-emerald-600">Safety Score</p>
+                <p className={`text-2xl font-bold ${getSafetyLevelColor(safetyLevel)}`}>{safetyScore}%</p>
               </div>
-              Analysis Summary
-            </h3>
-            <div className={`px-4 py-2 rounded-full text-sm font-bold border-2 ${getVerdictStyle(recommendation.verdict)}`}>
-              {recommendation.verdict?.toUpperCase() || 'UNKNOWN'}
+              <Shield className="h-8 w-8 text-emerald-500" />
             </div>
           </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-6">
-            {/* Safety Score Circle */}
-            <div className="text-center">
-              <div className="relative inline-flex items-center justify-center w-24 h-24 mb-4">
-                <svg className="w-24 h-24 transform -rotate-90">
-                  <circle
-                    cx="48"
-                    cy="48"
-                    r="40"
-                    stroke="currentColor"
-                    strokeWidth="8"
-                    fill="none"
-                    className="text-gray-200"
-                  />
-                  <circle
-                    cx="48"
-                    cy="48"
-                    r="40"
-                    stroke="currentColor"
-                    strokeWidth="8"
-                    fill="none"
-                    strokeDasharray={`${2 * Math.PI * 40}`}
-                    strokeDashoffset={`${2 * Math.PI * 40 * (1 - safetyScore / 100)}`}
-                    className={`transition-all duration-1000 ${getSafetyLevelColor(safetyLevel)}`}
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className={`text-2xl font-bold ${getSafetyLevelColor(safetyLevel)}`}>
-                    {safetyScore}
-                  </span>
+          <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-amber-600">Concerns</p>
+                <p className="text-2xl font-bold text-amber-700">{concernCount}</p>
+              </div>
+              <AlertCircle className="h-8 w-8 text-amber-500" />
+            </div>
+          </div>
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-blue-600">Verdict</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-lg font-bold text-blue-700 capitalize">{recommendation.verdict || 'N/A'}</p>
+                  {recommendation.verdict === 'recommend' 
+                    ? <ThumbsUp className="h-6 w-6 text-blue-500" />
+                    : <ThumbsDown className="h-6 w-6 text-blue-500" />}
                 </div>
               </div>
-              <div className="text-sm font-medium text-gray-600 mb-1">Safety Score</div>
-              <div className={`text-lg font-bold ${getSafetyLevelColor(safetyLevel)}`}>
-                {safetyLevel.charAt(0).toUpperCase() + safetyLevel.slice(1)}
-              </div>
             </div>
-            
-            {/* Health Concern Count */}
-            <div className="text-center">
-              <div className="relative inline-flex items-center justify-center w-24 h-24 mb-4 bg-gradient-to-br from-red-100 to-red-200 rounded-full">
-                <span className="text-3xl font-bold text-red-600">{concernCount}</span>
-              </div>
-              <div className="text-sm font-medium text-gray-600 mb-1">Health Concerns</div>
-              <div className="text-lg font-bold text-red-600">
-                {concernCount === 0 ? 'None Found' : `${concernCount} Issues`}
-              </div>
-            </div>
-            
-            {/* AI Confidence */}
-            <div className="text-center">
-              <div className="relative inline-flex items-center justify-center w-24 h-24 mb-4 bg-gradient-to-br from-purple-100 to-purple-200 rounded-full">
-                <Brain className="h-8 w-8 text-purple-600" />
-              </div>
-              <div className="text-sm font-medium text-gray-600 mb-1">AI Confidence</div>
-              <div className={`text-lg font-bold ${
-                recommendation.confidence === 'high' ? 'text-green-600' :
-                recommendation.confidence === 'medium' ? 'text-yellow-600' :
-                'text-red-600'
-              }`}>
-                {recommendation.confidence?.toUpperCase() || 'LOW'}
+          </div>
+        </div>
+        {analysis_summary.main_verdict && (
+          <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl p-6 border border-gray-200 mb-4">
+            <div className="flex items-start gap-3">
+              <Lightbulb className="h-6 w-6 text-amber-500 mt-1" />
+              <div>
+                <h4 className="font-bold text-lg text-gray-800 mb-2">Main Verdict</h4>
+                <p className="text-gray-700 leading-relaxed">{analysis_summary.main_verdict}</p>
               </div>
             </div>
           </div>
-          
-          {/* Expert Assessment */}
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-white/50">
-            <h4 className="font-bold text-gray-900 mb-3 flex items-center text-lg">
-              <Target className="h-5 w-5 mr-2" />
-              Expert Assessment
-            </h4>
-            <p className="text-gray-800 font-medium leading-relaxed">
-              {analysis_summary.main_verdict || "Analysis completed successfully."}
+        )}
+        {analysis_summary.detailed_explanation && (
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
+            <div className="flex items-start gap-3">
+              <FileText className="h-6 w-6 text-blue-500 mt-1" />
+              <div>
+                <h4 className="font-bold text-lg text-blue-800 mb-2">Detailed Explanation</h4>
+                <p className="text-blue-700 leading-relaxed">{analysis_summary.detailed_explanation}</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Ingredients Analysis (flat list, not grouped like AnalysisDetails) */}
+      {ingredients.length > 0 && (
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 p-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg">
+              <Beaker className="h-6 w-6 text-white" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900">Ingredient Analysis</h3>
+          </div>
+          <div className="space-y-4">
+            {ingredients.map((ingredient, i) => {
+              const { bg, text, badge, icon } = {
+                safe: {
+                  bg: 'bg-emerald-50 border-emerald-200',
+                  text: 'text-emerald-800',
+                  badge: 'bg-emerald-100 text-emerald-700 border-emerald-300',
+                  icon: <CheckCircle className="h-4 w-4 text-emerald-600" />
+                },
+                caution: {
+                  bg: 'bg-amber-50 border-amber-200',
+                  text: 'text-amber-800',
+                  badge: 'bg-amber-100 text-amber-700 border-amber-300',
+                  icon: <AlertTriangle className="h-4 w-4 text-amber-600" />
+                },
+                danger: {
+                  bg: 'bg-red-50 border-red-200',
+                  text: 'text-red-800',
+                  badge: 'bg-red-100 text-red-700 border-red-300',
+                  icon: <XCircle className="h-4 w-4 text-red-600" />
+                }
+              }[ingredient.status] || {
+                bg: 'bg-gray-50 border-gray-200',
+                text: 'text-gray-800',
+                badge: 'bg-gray-100 text-gray-700 border-gray-300',
+                icon: <Info className="h-4 w-4 text-gray-600" />
+              };
+              return (
+                <div key={i} className={`p-6 ${bg} border-l-4 ${bg.includes('emerald') ? 'border-l-emerald-400' : bg.includes('amber') ? 'border-l-amber-400' : bg.includes('red') ? 'border-l-red-400' : 'border-l-gray-400'}`}>
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      {icon}
+                      <h5 className={`font-bold text-lg ${text}`}>{ingredient.name}</h5>
+                    </div>
+                    <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${badge}`}>
+                      {(ingredient.status || 'unknown').toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <p className={`text-sm font-semibold ${text} mb-1`}>Purpose:</p>
+                      <p className={`text-sm ${text} opacity-90`}>{ingredient.purpose || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <p className={`text-sm font-semibold ${text} mb-1`}>Concern Level:</p>
+                      <p className={`text-sm ${text} opacity-90 capitalize`}>{ingredient.concern_level || 'Not specified'}</p>
+                    </div>
+                  </div>
+                  <div className="mb-3">
+                    <p className={`text-sm font-semibold ${text} mb-1`}>Summary:</p>
+                    <p className={`text-sm ${text} opacity-90 leading-relaxed`}>{ingredient.quick_summary || 'No summary available'}</p>
+                  </div>
+                  {ingredient.why_flagged && (
+                    <div className="bg-white/50 rounded-lg p-3 border border-white/30">
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5" />
+                        <div>
+                          <p className="text-xs font-semibold text-amber-800 mb-1">Why Flagged:</p>
+                          <p className="text-xs text-amber-700">{ingredient.why_flagged}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {ingredient.user_specific_risk && (
+                    <div className="bg-red-100/50 rounded-lg p-3 border border-red-200/50 mt-3">
+                      <div className="flex items-center gap-2">
+                        <AlertOctagon className="h-4 w-4 text-red-600" />
+                        <p className="text-xs font-semibold text-red-800">User-Specific Risk Identified</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Health Alerts */}
+      {filteredHealthAlerts.length > 0 && (
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 p-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
+              <AlertOctagon className="h-6 w-6 text-white" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900">Health Alerts</h3>
+          </div>
+          <div className="space-y-4">
+            {filteredHealthAlerts.map((alert, index) => {
+              const severityInfo = getSeverityColor(alert.severity);
+              return (
+                <div key={index} className={`${severityInfo} rounded-2xl p-6`}>
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0 flex items-center justify-center">
+                      <AlertTriangle className="h-5 w-5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-bold text-lg text-gray-800">{alert.title || 'Health Alert'}</h4>
+                        <span className={`px-3 py-1 text-xs font-semibold rounded-full border border-red-200 text-red-700 bg-red-100`}>
+                          {(alert.severity || 'unknown').toUpperCase()}
+                        </span>
+                      </div>
+                      <p className="text-gray-700 leading-relaxed">{alert.description || alert.message}</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Alternatives */}
+      {alternatives.length > 0 && (
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 p-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+              <Sparkles className="h-6 w-6 text-white" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900">Recommended Alternatives</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {alternatives.map((alt, i) => (
+              <div key={i} className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 border border-green-200">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Star className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-green-800 mb-2">{alt.name}</h4>
+                    <p className="text-sm text-green-700 mb-2 leading-relaxed">{alt.why}</p>
+                    {alt.benefit && (
+                      <div className="bg-white/50 rounded-lg p-2 border border-green-200/50">
+                        <p className="text-xs font-semibold text-green-800 mb-1">Benefit</p>
+                        <p className="text-xs text-green-700">{alt.benefit}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Key Advice */}
+      {key_advice && (
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 p-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+              <Heart className="h-6 w-6 text-white" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900">Expert Advice</h3>
+          </div>
+          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-6 border border-indigo-200">
+            <div className="flex items-start gap-3">
+              <Lightbulb className="h-6 w-6 text-indigo-500 mt-1" />
+              <p className="text-indigo-700 leading-relaxed">{key_advice}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Analysis Metadata */}
+      <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-8">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-12 h-12 bg-gradient-to-r from-gray-500 to-slate-600 rounded-xl flex items-center justify-center shadow-lg">
+            <Activity className="h-6 w-6 text-white" />
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900">Analysis Details</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+            <div className="flex items-center gap-3 mb-2">
+              <TrendingUp className="h-5 w-5 text-blue-500" />
+              <span className="font-semibold text-gray-700">Confidence</span>
+            </div>
+            <p className="text-lg font-bold text-gray-800 capitalize">
+              {(recommendation.confidence || 'low').toUpperCase()}
+            </p>
+          </div>
+          <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+            <div className="flex items-center gap-3 mb-2">
+              <Shield className="h-5 w-5 text-green-500" />
+              <span className="font-semibold text-gray-700">Safe to Try</span>
+            </div>
+            <p className="text-lg font-bold text-gray-800">
+              {recommendation.safe_to_try ? 'Yes' : 'No'}
             </p>
           </div>
         </div>
       </div>
-
-      {/* Health Alerts Section */}
-      {filteredHealthAlerts.length > 0 && (
-        <div className="space-y-6">
-          <h3 className="text-2xl font-bold text-gray-900 flex items-center">
-            <div className="bg-red-500 rounded-xl p-2 mr-4">
-              <Shield className="h-6 w-6 text-white" />
-            </div>
-            Health Alerts
-            <span className="ml-3 px-3 py-1 bg-red-100 text-red-700 text-sm font-bold rounded-full">
-              {filteredHealthAlerts.length}
-            </span>
-          </h3>
-          <div className="grid gap-6">
-            {filteredHealthAlerts.map((alert, i) => (
-              <div key={i} className={`relative overflow-hidden rounded-2xl border-l-8 ${
-                alert.severity === 'high' ? 'border-red-500 bg-gradient-to-r from-red-50 to-red-25' :
-                alert.severity === 'medium' ? 'border-yellow-500 bg-gradient-to-r from-yellow-50 to-yellow-25' :
-                'border-blue-500 bg-gradient-to-r from-blue-50 to-blue-25'
-              } shadow-lg`}>
-                <div className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center mb-3">
-                        <div className={`p-2 rounded-lg mr-3 ${getSeverityColor(alert.severity)}`}>
-                          {getAlertIcon(alert.type)}
-                        </div>
-                        <div>
-                          <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getSeverityColor(alert.severity)}`}>
-                            {alert.severity?.toUpperCase()} RISK
-                          </span>
-                          <div className="text-sm text-gray-600 mt-1 font-medium">
-                            Ingredient: {alert.ingredient}
-                          </div>
-                        </div>
-                      </div>
-                      <h4 className="text-lg font-bold text-gray-900 mb-2">{alert.message}</h4>
-                      <div className="bg-white/70 rounded-lg p-3 border">
-                        <p className="text-sm text-gray-700">
-                          <span className="font-semibold">Recommended Action:</span> {alert.action}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Ingredients Analysis Section */}
-      {ingredients.length > 0 && (
-        <div className="space-y-6">
-          <h3 className="text-2xl font-bold text-gray-900 flex items-center">
-            <div className="bg-purple-500 rounded-xl p-2 mr-4">
-              <Sparkles className="h-6 w-6 text-white" />
-            </div>
-            Ingredient Analysis
-            <span className="ml-3 px-3 py-1 bg-purple-100 text-purple-700 text-sm font-bold rounded-full">
-              {ingredients.length}
-            </span>
-          </h3>
-          <div className="grid gap-4">
-            {ingredients.map((ingredient, i) => (
-              <div key={i} className={`relative overflow-hidden rounded-2xl border-2 shadow-md hover:shadow-lg transition-shadow ${getStatusColor(ingredient.status)}`}>
-                <div className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <h4 className="text-xl font-bold text-gray-900 mb-2">{ingredient.name}</h4>
-                      <p className="text-gray-700 font-medium leading-relaxed">{ingredient.quick_summary}</p>
-                    </div>
-                    <div className="flex flex-col items-end space-y-2">
-                      {ingredient.user_specific_risk && (
-                        <span className="px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-full border border-red-600">
-                          PERSONAL RISK
-                        </span>
-                      )}
-                      <div className={`p-2 rounded-full border-2 ${getStatusColor(ingredient.status)}`}>
-                        {getStatusIcon(ingredient.status)}
-                      </div>
-                    </div>
-                  </div>
-                  {ingredient.why_flagged && (
-                    <div className="bg-white/70 rounded-lg p-4 border border-gray-200">
-                      <h5 className="font-semibold text-gray-900 mb-2 flex items-center">
-                        <Info className="h-4 w-4 mr-2" />
-                        Why This Ingredient Was Flagged:
-                      </h5>
-                      <p className="text-sm text-gray-700">{ingredient.why_flagged}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Recommendation Section */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-gray-50 via-white to-gray-50 rounded-3xl border-2 border-gray-200 shadow-xl">
-        <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-to-br from-green-200/20 to-transparent rounded-full transform -translate-x-16 -translate-y-16"></div>
-        <div className="relative p-8">
-          <h3 className="text-2xl font-bold text-gray-900 flex items-center mb-6">
-            <div className="bg-green-500 rounded-xl p-2 mr-4">
-              <TrendingUp className="h-6 w-6 text-white" />
-            </div>
-            Our Expert Recommendation
-          </h3>
-          <div className={`relative overflow-hidden rounded-2xl p-8 text-center shadow-lg ${
-            recommendation.safe_to_try 
-              ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' 
-              : 'bg-gradient-to-r from-red-500 to-rose-500 text-white'
-          }`}>
-            <div className="relative z-10">
-              <div className="text-4xl mb-4">
-                {recommendation.safe_to_try ? (
-                  <div className="flex items-center justify-center space-x-2">
-                    <ThumbsUp className="h-12 w-12" />
-                    <span>✅</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center space-x-2">
-                    <ThumbsDown className="h-12 w-12" />
-                    <span>❌</span>
-                  </div>
-                )}
-              </div>
-              <h4 className="text-2xl font-bold mb-4">
-                {recommendation.safe_to_try ? 'Safe to Use' : 'Not Recommended'}
-              </h4>
-              <p className="text-lg font-medium leading-relaxed opacity-90">
-                {recommendation.reason || "Based on our analysis of the ingredients and your health profile."}
-              </p>
-            </div>
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12"></div>
-          </div>
-        </div>
-      </div>
-
-      {/* Alternatives Section */}
-      {alternatives.length > 0 && (
-        <div className="space-y-6">
-          <h3 className="text-2xl font-bold text-gray-900 flex items-center">
-            <div className="bg-yellow-500 rounded-xl p-2 mr-4">
-              <Star className="h-6 w-6 text-white" />
-            </div>
-            Better Alternatives for You
-            <span className="ml-3 px-3 py-1 bg-yellow-100 text-yellow-700 text-sm font-bold rounded-full">
-              {alternatives.length} Found
-            </span>
-          </h3>
-          <div className="grid gap-6 md:grid-cols-2">
-            {alternatives.map((alternative, i) => (
-              <div key={i} className="relative overflow-hidden bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-200 shadow-lg hover:shadow-xl transition-all duration-300 group">
-                <div className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="bg-green-500 rounded-lg p-2">
-                        <Package className="h-5 w-5 text-white" />
-                      </div>
-                      <h4 className="text-xl font-bold text-green-800 group-hover:text-green-900 transition-colors">
-                        {alternative.name}
-                      </h4>
-                    </div>
-                    <Award className="h-6 w-6 text-green-600" />
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div className="bg-white/70 rounded-lg p-4 border border-green-100">
-                      <h5 className="font-semibold text-green-800 mb-2 flex items-center">
-                        <Lightbulb className="h-4 w-4 mr-2" />
-                        Why We Recommend This:
-                      </h5>
-                      <p className="text-green-700 text-sm leading-relaxed">{alternative.why}</p>
-                    </div>
-                    
-                    <div className="bg-gradient-to-r from-green-100 to-emerald-100 rounded-lg p-4 border border-green-200">
-                      <h5 className="font-semibold text-green-800 mb-2 flex items-center">
-                        <Heart className="h-4 w-4 mr-2" />
-                        Key Benefits for You:
-                      </h5>
-                      <p className="text-green-700 text-sm font-medium">{alternative.benefit}</p>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Hover effect overlay */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transform translate-x-full group-hover:translate-x-0 transition-transform duration-700"></div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Expert's Key Advice Section */}
-      {key_advice && (
-        <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white rounded-3xl shadow-2xl">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/90 via-purple-600/90 to-indigo-600/90"></div>
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full transform translate-x-32 -translate-y-32"></div>
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full transform -translate-x-24 translate-y-24"></div>
-          
-          <div className="relative p-8 z-10">
-            <h3 className="text-2xl font-bold flex items-center mb-6">
-              <div className="bg-white/20 rounded-xl p-2 mr-4">
-                <Zap className="h-6 w-6" />
-              </div>
-              Expert's Key Advice
-            </h3>
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-              <p className="text-xl font-medium leading-relaxed">{key_advice}</p>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
 
-// Helper to safely retrieve properties from the result object
-const getResultProperty = (result, property, fallback = '') => {
-  return result?.[property] || fallback;
-};
+// Helper to safely retrieve properties from nested result
+const getResultProperty = (result, property, fallback = '') => result?.[property] || fallback;
 
-// Decides which renderer to use based on result type
+// Decide which renderer to use
 const renderAnalysisResult = (result) => {
   const analysisResult = result?.result;
-    
   if (typeof analysisResult === 'object' && analysisResult !== null) {
     return renderJsonAnalysisResult(analysisResult);
   } else {
@@ -511,12 +437,21 @@ const renderAnalysisResult = (result) => {
   }
 };
 
-// Main ResultView component rendering the analysis and controls
+// **** MAIN COMPONENT ****
 const ResultView = ({ result, startNewAnalysis, navigateToHistory }) => {
+  // TODO: If you want PDF export, share, delete, image view, use this pattern:
+  // const navigate = useNavigate();
+  // const [pdfBlob, setPdfBlob] = useState(null);
+  // const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  // const [deleting, setDeleting] = useState(false);
+  // const handleDownload = () => { /* see AnalysisDetails for PDF generation */ };
+  // const handleShare = async () => { /* see AnalysisDetails for Web Share API */ };
+  // Then, add UI controls as in AnalysisDetails header
+
   return (
     <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 overflow-hidden">
       <div className="p-8">
-        {/* Header with timestamp and category */}
+        {/* Header: Analysis Report */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-10 space-y-4 lg:space-y-0">
           <div>
             <h2 className="text-4xl font-bold text-gray-900 mb-3 flex items-center">
@@ -545,18 +480,17 @@ const ResultView = ({ result, startNewAnalysis, navigateToHistory }) => {
           <div className="flex space-x-4">
             <button
               onClick={startNewAnalysis}
-              className="flex items-center px-6 py-3 bg-blue-600 text-white hover:bg-blue-700 rounded-xl transition-colors shadow-lg font-medium"
+              className="flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 rounded-xl transition-all duration-200 font-medium shadow-lg"
             >
-              <RotateCcw className="h-5 w-5 mr-2" />
-              New Analysis
+              <RotateCcw className="h-5 w-5 mr-2" />New Analysis
             </button>
             <button
               onClick={navigateToHistory}
-              className="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 rounded-xl transition-colors border-2 border-gray-200 font-medium"
+              className="flex items-center px-6 py-3 bg-white text-gray-700 hover:bg-gray-50 rounded-xl transition-all duration-200 font-medium border-2 border-gray-200"
             >
-              <History className="h-5 w-5 mr-2" />
-              View History
+              <History className="h-5 w-5 mr-2" />View History
             </button>
+            {/* TODO: Add Download and Share buttons here as in AnalysisDetails if you want PDF features */}
           </div>
         </div>
 
