@@ -4,21 +4,22 @@ A modern React.js frontend application for the Ingredient Analysis API, built wi
 
 ## Features
 
-- **User Authentication**: Login, registration, and profile management
-- **Image Upload & Analysis**: Upload ingredient photos for AI-powered analysis
-- **Medical History Integration**: Personalized analysis based on user's medical conditions and allergies
-- **Analysis History**: View and manage past ingredient analyses
-- **Responsive Design**: Works seamlessly on desktop and mobile devices
-- **Modern UI**: Clean, intuitive interface with smooth animations
+- User Authentication: Login, registration, and profile management.
+- Image Upload & Analysis: Upload ingredient photos for AI-powered analysis.
+- Medical History Integration: Personalized analysis based on user's medical conditions and allergies.
+- Analysis History: View and manage past ingredient analyses.
+- Responsive Design: Works seamlessly on desktop and mobile devices.
+- Modern UI: Clean, intuitive interface with smooth animations.
 
 ## Tech Stack
 
-- **React 18** - UI library
-- **Vite** - Build tool and dev server
-- **Tailwind CSS** - Utility-first CSS framework
-- **React Router DOM** - Client-side routing
-- **Axios** - HTTP client
-- **Lucide React** - Icon library
+- React 18: UI library.
+- Vite: Build tool and dev server.
+- Tailwind CSS: Utility-first CSS framework.
+- React Router DOM: Client-side routing.
+- Axios: HTTP client.
+- Lucide React: Icon library.
+- jsPDF & jspdf-autotable: For generating PDF reports of analysis.
 
 ## Project Structure
 
@@ -60,42 +61,38 @@ src/
 
 ### Installation
 
-1. **Clone the repository**
+1. Clone the repository
 
-   ```bash
-   git clone <repository-url>
-   cd ingredient-analysis-frontend
-   ```
+```bash
+git clone <repository-url>
+cd ingredient-analysis-frontend
+```
 
-2. **Install dependencies**
+2. Install dependencies
 
-   ```bash
-   npm install
-   # or
-   yarn install
-   ```
+```bash
+npm install
+# or
+yarn install
+```
 
-3. **Environment Setup**
+3. Environment Setup
 
-   ```bash
-   cp .env.example .env
-   ```
+Create a .env file in the root of the frontend directory and add your backend API URL:
 
-   Update `.env` with your backend API URL:
+```
+VITE_API_BASE_URL=http://localhost:8000/api/v1
+```
 
-   ```
-   VITE_API_BASE_URL=http://localhost:8000/api/v1
-   ```
+4. Start the development server
 
-4. **Start the development server**
+```bash
+npm run dev
+# or
+yarn dev
+```
 
-   ```bash
-   npm run dev
-   # or
-   yarn dev
-   ```
-
-   The application will be available at `http://localhost:5173/`
+The application will be available at http://localhost:5173/
 
 ### Build for Production
 
@@ -105,47 +102,49 @@ npm run build
 yarn build
 ```
 
-The built files will be in the `dist` directory.
+The built files will be in the dist directory.
 
 ## API Integration
 
 The frontend integrates with the Django REST API with the following endpoints:
 
-- **Authentication**
+### Authentication
 
-  - `POST /auth/login/` - User login
-  - `POST /auth/register/` - User registration
-  - `GET /auth/profile/` - Get user profile
-  - `PUT /auth/profile/` - Update user profile
-  - `POST /auth/logout/` - User logout
+- POST /auth/login/ - User login
+- POST /auth/register/ - User registration
+- GET /auth/profile/ - Get user profile
+- PUT /auth/profile/ - Update user profile
+- POST /auth/logout/ - User logout
 
-- **Medical History**
+### Medical History
 
-  - `GET /medical/` - Get medical history
-  - `POST /medical/` - Create medical history
-  - `PUT /medical/` - Update medical history
-  - `GET /medical/check/` - Check if medical history exists
+- GET /medical/ - Get medical history
+- POST /medical/ - Create medical history
+- PUT /medical/ - Update medical history
+- GET /medical/check/ - Check if medical history exists
 
-- **Analysis**
-  - `POST /analysis/analyze/` - Analyze ingredient image
-  - `GET /analysis/history/` - Get analysis history
-  - `GET /analysis/history/{id}/` - Get specific analysis details
+### Analysis
 
-## Key Components
+- POST /analysis/analyze/ - Analyze ingredient image
+- GET /analysis/history/ - Get analysis history
+- GET /analysis/history/{id}/ - Get specific analysis details
+- DELETE /analysis/history/{id}/ - Delete a specific analysis
 
-### Authentication Context
+## 🔧 Key Components
+
+### 🔒 Authentication Context
 
 Manages user authentication state, login/logout functionality, and token management with automatic refresh.
 
-### Protected Routes
+### 🛡️ Protected Routes
 
 Ensures authenticated access to protected pages and redirects unauthenticated users to login.
 
-### API Service
+### 🌐 API Service
 
 Centralized HTTP client with interceptors for token management and error handling.
 
-### Component Features
+### 📦 Component Features
 
 - **Dashboard**: Overview of user activity and quick actions
 - **Analyze**: Image upload with drag-and-drop, category selection, and real-time analysis
@@ -153,40 +152,32 @@ Centralized HTTP client with interceptors for token management and error handlin
 - **Medical History**: Interactive management of allergies and medical conditions
 - **Profile**: User profile management and account settings
 
-## Development
+## 💻 Development
 
-### Available Scripts
+### 📜 Available Scripts
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-- `npm run lint` - Run ESLint
+```bash
+npm run dev      # Start development server
+npm run build    # Build for production
+npm run preview  # Preview production build
+npm run lint     # Run ESLint
+```
 
-### Code Style
+### 🎨 Code Style
 
 The project uses ESLint for code linting. Run `npm run lint` to check for issues.
 
-### Customization
+## 🎛️ Customization
 
 - **Styling**: Modify `tailwind.config.js` for custom themes and colors
 - **API URL**: Update `VITE_API_BASE_URL` in `.env` for different backend URLs
 - **Components**: All components are modular and can be easily customized
 
-## Browser Support
+## 🌐 Browser Support
 
-- Chrome (latest)
-- Firefox (latest)
-- Safari (latest)
-- Edge (latest)
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License.
+| Browser | Support     |
+| ------- | ----------- |
+| Chrome  | ✅ (latest) |
+| Firefox | ✅ (latest) |
+| Safari  | ✅ (latest) |
+| Edge    | ✅ (latest) |
