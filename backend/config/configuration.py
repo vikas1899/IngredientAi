@@ -22,12 +22,22 @@ WSGI_APPLICATION = 'ingredient_analysis.wsgi.application'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # --- Database Configuration ---
-DB_ENGINE = 'django.db.backends.postgresql'
-DB_NAME = os.getenv('DB_NAME')
-DB_USER = os.getenv('DB_USER')
-DB_PASSWORD = os.getenv('DB_PASSWORD')
-DB_HOST = os.getenv('DB_HOST')
-DB_PORT = int(os.getenv('DB_PORT', 5432))
+if os.getenv('CI') == 'true':
+    # Use SQLite for CI/testing
+    DB_ENGINE = 'django.db.backends.sqlite3'
+    DB_NAME = 'db.sqlite3'
+    DB_USER = None
+    DB_PASSWORD = None
+    DB_HOST = None
+    DB_PORT = None
+else:
+    # Use PostgreSQL for production/development
+    DB_ENGINE = 'django.db.backends.postgresql'
+    DB_NAME = os.getenv('DB_NAME')
+    DB_USER = os.getenv('DB_USER')
+    DB_PASSWORD = os.getenv('DB_PASSWORD')
+    DB_HOST = os.getenv('DB_HOST')
+    DB_PORT = int(os.getenv('DB_PORT', 5432))
 
 # --- Cloudinary Configuration ---
 CLOUDINARY_CLOUD_NAME = os.getenv('CLOUDINARY_CLOUD_NAME')
