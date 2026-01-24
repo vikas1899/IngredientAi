@@ -1,14 +1,16 @@
-import os
 import json
 import logging
+import sys
+from pathlib import Path
 import google.generativeai as genai
-from dotenv import load_dotenv
 from PIL import Image
 
-logger = logging.getLogger(__name__)
+# Add the parent directory to the path to import config module
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-# Load environment variables
-load_dotenv()
+from config.configuration import GEMINI_API_KEY
+
+logger = logging.getLogger(__name__)
 
 
 class AIAnalysisService:
@@ -30,11 +32,10 @@ class AIAnalysisService:
 
     def _get_api_key(self):
         """Validate and set Gemini API key"""
-        gemini_key = os.getenv("GEMINI_API_KEY")
-        if not gemini_key:
+        if not GEMINI_API_KEY:
             raise ValueError("GEMINI_API_KEY environment variable is required")
-        genai.configure(api_key=gemini_key)
-        return gemini_key
+        genai.configure(api_key=GEMINI_API_KEY)
+        return GEMINI_API_KEY
 
     def _get_model(self):
         """Get or create the Gemini model instance"""

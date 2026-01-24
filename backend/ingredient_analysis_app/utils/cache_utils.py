@@ -1,15 +1,13 @@
 import redis
 import hashlib
 import json
-from dotenv import load_dotenv
-import os
+import sys
+from pathlib import Path
 
-load_dotenv()
+# Add the parent directory to the path to import config module
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-# Reading Redis config from environment variables
-REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
-REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
-REDIS_DB = int(os.getenv('REDIS_DB', 0))
+from config.configuration import REDIS_HOST, REDIS_PORT, REDIS_DB
 
 # Initialize Redis client
 redis_client = redis.StrictRedis(

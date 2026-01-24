@@ -1,18 +1,14 @@
 from pathlib import Path
-import os
 from datetime import timedelta
-from dotenv import load_dotenv
+import sys
 
-# --- Core Paths and Configuration ---
-BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv()
+# Add the parent directory to the path to import config module
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-SECRET_KEY = os.getenv('SECRET_KEY')
-DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
-ALLOWED_HOSTS = ["*"]
-ROOT_URLCONF = 'ingredient_analysis.urls'
-WSGI_APPLICATION = 'ingredient_analysis.wsgi.application'
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+from config.configuration import (
+    BASE_DIR, SECRET_KEY, DEBUG, ALLOWED_HOSTS, ROOT_URLCONF,
+    WSGI_APPLICATION, DEFAULT_AUTO_FIELD
+)
 
 
 # --- Application Definitions ---
@@ -51,27 +47,34 @@ MIDDLEWARE = [
 
 
 # --- Database Configuration ---
+from config.configuration import DB_ENGINE, DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME'),
-        'USER': os.getenv('DB_USER'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST'),
-        'PORT': int(os.getenv('DB_PORT', 5432))
+        'ENGINE': DB_ENGINE,
+        'NAME': DB_NAME,
+        'USER': DB_USER,
+        'PASSWORD': DB_PASSWORD,
+        'HOST': DB_HOST,
+        'PORT': DB_PORT
     }
 }
 
 
 # --- Static and Media File Configuration ---
-STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+from config.configuration import (
+    STATIC_URL, STATIC_ROOT, STATICFILES_STORAGE,
+    CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
+)
+
+STATIC_URL = STATIC_URL
+STATIC_ROOT = STATIC_ROOT
+STATICFILES_STORAGE = STATICFILES_STORAGE
 
 CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': os.getenv('CLOUDINARY_API_KEY'),
-    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET'),
+    'CLOUD_NAME': CLOUDINARY_CLOUD_NAME,
+    'API_KEY': CLOUDINARY_API_KEY,
+    'API_SECRET': CLOUDINARY_API_SECRET,
 }
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
@@ -95,10 +98,12 @@ TEMPLATES = [
 
 
 # --- Internationalization ---
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
-USE_I18N = True
-USE_TZ = True
+from config.configuration import LANGUAGE_CODE, TIME_ZONE, USE_I18N, USE_TZ
+
+LANGUAGE_CODE = LANGUAGE_CODE
+TIME_ZONE = TIME_ZONE
+USE_I18N = USE_I18N
+USE_TZ = USE_TZ
 
 
 # --- Password Validation ---
@@ -111,6 +116,11 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 # --- DRF, JWT, and API Settings ---
+from config.configuration import (
+    ACCESS_TOKEN_LIFETIME_MINUTES, REFRESH_TOKEN_LIFETIME_DAYS,
+    JWT_ALGORITHM, JWT_AUTH_HEADER_TYPE, DEFAULT_PAGINATION_PAGE_SIZE
+)
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -118,7 +128,7 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticated'],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 10,
+    'PAGE_SIZE': DEFAULT_PAGINATION_PAGE_SIZE,
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_PARSER_CLASSES': [
         'rest_framework.parsers.JSONParser',
@@ -128,12 +138,12 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=ACCESS_TOKEN_LIFETIME_MINUTES),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=REFRESH_TOKEN_LIFETIME_DAYS),
     'ROTATE_REFRESH_TOKENS': True,
     'SIGNING_KEY': SECRET_KEY,
-    'ALGORITHM': 'HS256',
-    'AUTH_HEADER_TYPES': ('Bearer',),
+    'ALGORITHM': JWT_ALGORITHM,
+    'AUTH_HEADER_TYPES': (JWT_AUTH_HEADER_TYPE,),
 }
 
 # In production, set CORS_ALLOW_ALL_ORIGINS to False and configure CORS_ALLOWED_ORIGINS

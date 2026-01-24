@@ -10,7 +10,7 @@ jobs:
   # Frontend Testing
   test-frontend:
     runs-on: ubuntu-latest
-    name: Test Frontend (React)
+    name: Test Fronten d (React)
     defaults:
       run:
         working-directory: ./frontend
@@ -62,7 +62,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.9"
+          python-version: "3.13"
 
       - name: Install dependencies
         run: |
@@ -101,7 +101,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: "3.13"
 
       - name: Build frontend
         working-directory: ./frontend
@@ -131,7 +131,8 @@ jobs:
       - name: Notify deployment start
         run: echo "🚀 Deploying to production environment (main)..."
 
-      - name: Setup Node.js
+      - name: Setup Node.js2
+
         uses: actions/setup-node@v3
         with:
           node-version: "18"
@@ -139,7 +140,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.9"
+          python-version: "3.13"
 
       - name: Build frontend
         working-directory: ./frontend
