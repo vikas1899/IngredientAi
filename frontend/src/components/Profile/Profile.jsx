@@ -1,51 +1,63 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { User, Save, AlertCircle, CheckCircle, Mail, UserCheck, Calendar, Shield, Trash2, Edit3, Camera, Upload } from 'lucide-react';
-import Navbar from '../Navbar';
-import { apiService } from '../../services/apiService';
+import React, { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
+import {
+  User,
+  Save,
+  AlertCircle,
+  CheckCircle,
+  Mail,
+  UserCheck,
+  Calendar,
+  Shield,
+  Trash2,
+  Edit3,
+  Camera,
+  Upload,
+} from "lucide-react";
+import Navbar from "../Navbar";
+import { apiService } from "../../services/apiService";
 
 const Profile = () => {
   const { user, updateProfile, logout } = useAuth();
   const navigate = useNavigate();
-  
+
   const [formData, setFormData] = useState({
-    username: user?.username || '',
-    email: user?.email || '',
-    first_name: user?.first_name || '',
-    last_name: user?.last_name || '',
+    username: user?.username || "",
+    email: user?.email || "",
+    first_name: user?.first_name || "",
+    last_name: user?.last_name || "",
   });
-  
+
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [errors, setErrors] = useState({});
   const [isEditing, setIsEditing] = useState(false);
   const [busyDelete, setBusyDelete] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [avatarPreview, _setAvatarPreview] = useState(null);
 
   // Update form data when user data changes
   useEffect(() => {
     if (user) {
       setFormData({
-        username: user.username || '',
-        email: user.email || '',
-        first_name: user.first_name || '',
-        last_name: user.last_name || '',
+        username: user.username || "",
+        email: user.email || "",
+        first_name: user.first_name || "",
+        last_name: user.last_name || "",
       });
       // Set avatar preview if user has an avatar URL
-     
     }
   }, [user]);
 
   // Check if form has changes
   const hasChanges = useMemo(() => {
     return (
-      formData.username !== (user?.username || '') ||
-      formData.email !== (user?.email || '') ||
-      formData.first_name !== (user?.first_name || '') ||
-      formData.last_name !== (user?.last_name || '')
+      formData.username !== (user?.username || "") ||
+      formData.email !== (user?.email || "") ||
+      formData.first_name !== (user?.first_name || "") ||
+      formData.last_name !== (user?.last_name || "")
     );
   }, [formData, user]);
 
@@ -54,37 +66,37 @@ const Profile = () => {
     const handleBeforeUnload = (e) => {
       if (isEditing && hasChanges) {
         e.preventDefault();
-        e.returnValue = '';
+        e.returnValue = "";
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [isEditing, hasChanges]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
-    
+
     // Clear specific field error when user starts typing
     if (errors[name]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [name]: ''
+        [name]: "",
       }));
     }
-    
+
     // Clear general messages
-    if (error) setError('');
-    if (success) setSuccess('');
+    if (error) setError("");
+    if (success) setSuccess("");
   };
 
   const getAvatarInitials = () => {
-    const firstName = formData.first_name || user?.first_name || '';
-    const lastName = formData.last_name || user?.last_name || '';
+    const firstName = formData.first_name || user?.first_name || "";
+    const lastName = formData.last_name || user?.last_name || "";
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
 
@@ -92,29 +104,30 @@ const Profile = () => {
     const newErrors = {};
 
     if (!formData.username.trim()) {
-      newErrors.username = 'Username is required';
+      newErrors.username = "Username is required";
     } else if (formData.username.length < 3) {
-      newErrors.username = 'Username must be at least 3 characters';
+      newErrors.username = "Username must be at least 3 characters";
     } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
-      newErrors.username = 'Username can only contain letters, numbers, and underscores';
+      newErrors.username =
+        "Username can only contain letters, numbers, and underscores";
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = "Email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = "Please enter a valid email address";
     }
 
     if (!formData.first_name.trim()) {
-      newErrors.first_name = 'First name is required';
+      newErrors.first_name = "First name is required";
     } else if (formData.first_name.length < 2) {
-      newErrors.first_name = 'First name must be at least 2 characters';
+      newErrors.first_name = "First name must be at least 2 characters";
     }
 
     if (!formData.last_name.trim()) {
-      newErrors.last_name = 'Last name is required';
+      newErrors.last_name = "Last name is required";
     } else if (formData.last_name.length < 2) {
-      newErrors.last_name = 'Last name must be at least 2 characters';
+      newErrors.last_name = "Last name must be at least 2 characters";
     }
 
     return newErrors;
@@ -123,8 +136,8 @@ const Profile = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
 
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
@@ -137,23 +150,21 @@ const Profile = () => {
     try {
       // Create FormData for file upload if avatar is selected
       let submitData = formData;
-      
-      
 
       const result = await updateProfile(submitData);
       if (result.success) {
-        setSuccess('Profile updated successfully!');
+        setSuccess("Profile updated successfully!");
         setIsEditing(false);
-        setTimeout(() => setSuccess(''), 5000);
+        setTimeout(() => setSuccess(""), 5000);
       } else {
-        if (typeof result.error === 'object') {
+        if (typeof result.error === "object") {
           setErrors(result.error);
         } else {
-          setError(result.error || 'Failed to update profile');
+          setError(result.error || "Failed to update profile");
         }
       }
-    } catch (err) {
-      setError('An unexpected error occurred. Please try again.');
+    } catch {
+      setError("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -162,15 +173,14 @@ const Profile = () => {
   const handleCancel = () => {
     setIsEditing(false);
     setFormData({
-      username: user?.username || '',
-      email: user?.email || '',
-      first_name: user?.first_name || '',
-      last_name: user?.last_name || '',
+      username: user?.username || "",
+      email: user?.email || "",
+      first_name: user?.first_name || "",
+      last_name: user?.last_name || "",
     });
     setErrors({});
-    setError('');
-    setSuccess('');
-    
+    setError("");
+    setSuccess("");
   };
 
   const handleDeleteAccount = async () => {
@@ -179,32 +189,32 @@ const Profile = () => {
     setBusyDelete(true);
     try {
       const result = await apiService.deleteAccount();
-      
+
       if (result.success) {
         // Call logout to clear auth context
         logout();
-        
+
         // Redirect to login with success message
-        navigate('/login', { 
+        navigate("/login", {
           replace: true,
-          state: { message: 'Your account has been successfully deleted.' }
+          state: { message: "Your account has been successfully deleted." },
         });
       } else {
-        setError(result.error || 'Failed to delete account');
+        setError(result.error || "Failed to delete account");
         setShowDeleteConfirm(false);
       }
-    } catch (err) {
-      setError('An unexpected error occurred while deleting your account');
+    } catch {
+      setError("An unexpected error occurred while deleting your account");
       setShowDeleteConfirm(false);
     } finally {
       setBusyDelete(false);
     }
   };
 
-  return  (
+  return (
     <>
       <Navbar />
-      
+
       {/* Delete Confirmation Modal with Backdrop Blur */}
       {showDeleteConfirm && (
         <DeleteConfirmationModal
@@ -248,7 +258,9 @@ const Profile = () => {
               <div className="flex items-start">
                 <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 mr-3 flex-shrink-0" />
                 <div>
-                  <h3 className="text-sm font-medium text-green-800">Success</h3>
+                  <h3 className="text-sm font-medium text-green-800">
+                    Success
+                  </h3>
                   <p className="text-sm text-green-700 mt-1">{success}</p>
                 </div>
               </div>
@@ -271,11 +283,13 @@ const Profile = () => {
                     ) : (
                       <div className="w-24 h-24 bg-white bg-opacity-20 rounded-full flex items-center justify-center border-4 border-white shadow-lg">
                         <span className="text-2xl font-bold">
-                          {getAvatarInitials() || <User className="h-12 w-12" />}
+                          {getAvatarInitials() || (
+                            <User className="h-12 w-12" />
+                          )}
                         </span>
                       </div>
                     )}
-                    
+
                     {/* Camera overlay when editing */}
                     {isEditing && (
                       <label className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full cursor-pointer opacity-0 hover:opacity-100 transition-opacity duration-200">
@@ -288,13 +302,13 @@ const Profile = () => {
                       </label>
                     )}
                   </div>
-                  
+
                   <h2 className="text-xl font-semibold text-white mb-1">
                     {formData.first_name} {formData.last_name}
                   </h2>
                   <p className="text-blue-100 text-sm">@{formData.username}</p>
                 </div>
-                
+
                 <div className="p-6 space-y-4">
                   <div className="flex items-center text-sm text-gray-600">
                     <Mail className="h-4 w-4 mr-3 text-gray-400" />
@@ -302,18 +316,20 @@ const Profile = () => {
                   </div>
                   <div className="flex items-center text-sm text-gray-600">
                     <Calendar className="h-4 w-4 mr-3 text-gray-400" />
-                   <span>
-                    Member since: {user?.date_joined ? (() => {
-                      const d = new Date(user.date_joined);
-                      return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`;
-                    })() : 'N/A'}
-                  </span>
-
+                    <span>
+                      Member since:{" "}
+                      {user?.date_joined
+                        ? (() => {
+                            const d = new Date(user.date_joined);
+                            return `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}/${d.getFullYear()}`;
+                          })()
+                        : "N/A"}
+                    </span>
                   </div>
                   <div className="flex items-center text-sm text-gray-600">
                     <UserCheck className="h-4 w-4 mr-3 text-gray-400" />
                     <span className="flex items-center">
-                      Status: 
+                      Status:
                       <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                         Active
                       </span>
@@ -331,7 +347,9 @@ const Profile = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <Edit3 className="h-6 w-6 text-gray-600 mr-3" />
-                      <h3 className="text-xl font-semibold text-gray-900">Personal Information</h3>
+                      <h3 className="text-xl font-semibold text-gray-900">
+                        Personal Information
+                      </h3>
                     </div>
                     {!isEditing && (
                       <button
@@ -343,14 +361,16 @@ const Profile = () => {
                     )}
                   </div>
                 </div>
-                
+
                 <div className="p-8">
                   <form onSubmit={handleSubmit} className="space-y-6">
-                    
                     {/* First Name and Last Name */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <label htmlFor="first_name" className="block text-sm font-semibold text-gray-700 mb-3">
+                        <label
+                          htmlFor="first_name"
+                          className="block text-sm font-semibold text-gray-700 mb-3"
+                        >
                           First Name
                         </label>
                         <input
@@ -360,9 +380,9 @@ const Profile = () => {
                           required
                           disabled={!isEditing}
                           className={`w-full px-4 py-3 border rounded-xl transition-all duration-200 text-gray-900 ${
-                            isEditing 
-                              ? `border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.first_name ? 'border-red-500 focus:ring-red-500' : ''}` 
-                              : 'border-gray-200 bg-gray-50 cursor-not-allowed'
+                            isEditing
+                              ? `border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.first_name ? "border-red-500 focus:ring-red-500" : ""}`
+                              : "border-gray-200 bg-gray-50 cursor-not-allowed"
                           }`}
                           placeholder="First name"
                           value={formData.first_name}
@@ -377,7 +397,10 @@ const Profile = () => {
                       </div>
 
                       <div>
-                        <label htmlFor="last_name" className="block text-sm font-semibold text-gray-700 mb-3">
+                        <label
+                          htmlFor="last_name"
+                          className="block text-sm font-semibold text-gray-700 mb-3"
+                        >
                           Last Name
                         </label>
                         <input
@@ -387,9 +410,9 @@ const Profile = () => {
                           required
                           disabled={!isEditing}
                           className={`w-full px-4 py-3 border rounded-xl transition-all duration-200 text-gray-900 ${
-                            isEditing 
-                              ? `border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.last_name ? 'border-red-500 focus:ring-red-500' : ''}` 
-                              : 'border-gray-200 bg-gray-50 cursor-not-allowed'
+                            isEditing
+                              ? `border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.last_name ? "border-red-500 focus:ring-red-500" : ""}`
+                              : "border-gray-200 bg-gray-50 cursor-not-allowed"
                           }`}
                           placeholder="Last name"
                           value={formData.last_name}
@@ -406,7 +429,10 @@ const Profile = () => {
 
                     {/* Username */}
                     <div>
-                      <label htmlFor="username" className="block text-sm font-semibold text-gray-700 mb-3">
+                      <label
+                        htmlFor="username"
+                        className="block text-sm font-semibold text-gray-700 mb-3"
+                      >
                         Username
                       </label>
                       <input
@@ -416,9 +442,9 @@ const Profile = () => {
                         required
                         disabled={!isEditing}
                         className={`w-full px-4 py-3 border rounded-xl transition-all duration-200 text-gray-900 ${
-                          isEditing 
-                            ? `border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.username ? 'border-red-500 focus:ring-red-500' : ''}` 
-                            : 'border-gray-200 bg-gray-50 cursor-not-allowed'
+                          isEditing
+                            ? `border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.username ? "border-red-500 focus:ring-red-500" : ""}`
+                            : "border-gray-200 bg-gray-50 cursor-not-allowed"
                         }`}
                         placeholder="Username"
                         value={formData.username}
@@ -434,7 +460,10 @@ const Profile = () => {
 
                     {/* Email */}
                     <div>
-                      <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-3">
+                      <label
+                        htmlFor="email"
+                        className="block text-sm font-semibold text-gray-700 mb-3"
+                      >
                         Email Address
                       </label>
                       <input
@@ -444,9 +473,9 @@ const Profile = () => {
                         required
                         disabled={!isEditing}
                         className={`w-full px-4 py-3 border rounded-xl transition-all duration-200 text-gray-900 ${
-                          isEditing 
-                            ? `border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.email ? 'border-red-500 focus:ring-red-500' : ''}` 
-                            : 'border-gray-200 bg-gray-50 cursor-not-allowed'
+                          isEditing
+                            ? `border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.email ? "border-red-500 focus:ring-red-500" : ""}`
+                            : "border-gray-200 bg-gray-50 cursor-not-allowed"
                         }`}
                         placeholder="Email address"
                         value={formData.email}
@@ -498,35 +527,54 @@ const Profile = () => {
                 <div className="bg-gradient-to-r from-green-50 to-emerald-50 px-8 py-6 border-b border-gray-200">
                   <div className="flex items-center">
                     <Shield className="h-6 w-6 text-green-600 mr-3" />
-                    <h3 className="text-xl font-semibold text-gray-900">Account Information</h3>
+                    <h3 className="text-xl font-semibold text-gray-900">
+                      Account Information
+                    </h3>
                   </div>
                 </div>
                 <div className="p-8">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="p-4 bg-gray-50 rounded-xl">
-                      <div className="text-sm font-medium text-gray-500 mb-1">User ID</div>
-                      <div className="text-lg font-semibold text-gray-900">{user?.id}</div>
+                      <div className="text-sm font-medium text-gray-500 mb-1">
+                        User ID
+                      </div>
+                      <div className="text-lg font-semibold text-gray-900">
+                        {user?.id}
+                      </div>
                     </div>
                     <div className="p-4 bg-gray-50 rounded-xl">
-                      <div className="text-sm font-medium text-gray-500 mb-1">Account Status</div>
+                      <div className="text-sm font-medium text-gray-500 mb-1">
+                        Account Status
+                      </div>
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                         Active
                       </span>
                     </div>
                     <div className="p-4 bg-gray-50 rounded-xl">
-                      <div className="text-sm font-medium text-gray-500 mb-1">Member Since</div>
+                      <div className="text-sm font-medium text-gray-500 mb-1">
+                        Member Since
+                      </div>
                       <div className="text-lg font-semibold text-gray-900">
-                        {user?.date_joined ? new Date(user.date_joined).toLocaleDateString('en-US', { 
-                          year: 'numeric', 
-                          month: 'long', 
-                          day: 'numeric' 
-                        }) : 'N/A'}
+                        {user?.date_joined
+                          ? new Date(user.date_joined).toLocaleDateString(
+                              "en-US",
+                              {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                              },
+                            )
+                          : "N/A"}
                       </div>
                     </div>
                     <div className="p-4 bg-gray-50 rounded-xl">
-                      <div className="text-sm font-medium text-gray-500 mb-1">Last Updated</div>
+                      <div className="text-sm font-medium text-gray-500 mb-1">
+                        Last Updated
+                      </div>
                       <div className="text-lg font-semibold text-gray-900">
-                        {user?.updated_at ? new Date(user.updated_at).toLocaleDateString() : 'Never'}
+                        {user?.updated_at
+                          ? new Date(user.updated_at).toLocaleDateString()
+                          : "Never"}
                       </div>
                     </div>
                   </div>
@@ -538,7 +586,9 @@ const Profile = () => {
                 <div className="bg-gradient-to-r from-red-50 to-pink-50 px-8 py-6 border-b border-red-200">
                   <div className="flex items-center">
                     <AlertCircle className="h-6 w-6 text-red-600 mr-3" />
-                    <h3 className="text-xl font-semibold text-red-900">Danger Zone</h3>
+                    <h3 className="text-xl font-semibold text-red-900">
+                      Danger Zone
+                    </h3>
                   </div>
                 </div>
                 <div className="p-8">
@@ -550,12 +600,15 @@ const Profile = () => {
                           Delete Account
                         </h4>
                         <p className="text-red-700 mb-6 leading-relaxed">
-                          Permanently delete your account and all associated data. This action cannot be undone 
-                          and will remove your profile, medical history, ingredient analysis history, and all personal data.
+                          Permanently delete your account and all associated
+                          data. This action cannot be undone and will remove
+                          your profile, medical history, ingredient analysis
+                          history, and all personal data.
                         </p>
                         <div className="flex items-center justify-between">
                           <div className="text-sm text-red-600">
-                            <span className="font-medium">Warning:</span> This will delete all your data permanently
+                            <span className="font-medium">Warning:</span> This
+                            will delete all your data permanently
                           </div>
                           <button
                             type="button"
@@ -563,7 +616,7 @@ const Profile = () => {
                             onClick={() => setShowDeleteConfirm(true)}
                             className="px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50 transition-colors duration-200 font-medium shadow-sm"
                           >
-                            {busyDelete ? 'Deleting...' : 'Delete'}
+                            {busyDelete ? "Deleting..." : "Delete"}
                           </button>
                         </div>
                       </div>
@@ -581,8 +634,8 @@ const Profile = () => {
 
 // Delete Confirmation Modal Component with Backdrop Blur
 const DeleteConfirmationModal = ({ isOpen, onClose, onConfirm, loading }) => {
-  const [confirmText, setConfirmText] = useState('');
-  const expectedText = 'DELETE';
+  const [confirmText, setConfirmText] = useState("");
+  const expectedText = "DELETE";
 
   if (!isOpen) return null;
 
@@ -593,9 +646,9 @@ const DeleteConfirmationModal = ({ isOpen, onClose, onConfirm, loading }) => {
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && confirmText === expectedText && !loading) {
+    if (e.key === "Enter" && confirmText === expectedText && !loading) {
       handleConfirm();
-    } else if (e.key === 'Escape') {
+    } else if (e.key === "Escape") {
       onClose();
     }
   };
@@ -609,10 +662,11 @@ const DeleteConfirmationModal = ({ isOpen, onClose, onConfirm, loading }) => {
             Delete Account
           </h3>
           <p className="text-gray-600">
-            This action cannot be undone. All your data will be permanently deleted.
+            This action cannot be undone. All your data will be permanently
+            deleted.
           </p>
         </div>
-        
+
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Type "{expectedText}" to confirm:
@@ -627,7 +681,7 @@ const DeleteConfirmationModal = ({ isOpen, onClose, onConfirm, loading }) => {
             autoFocus
           />
         </div>
-        
+
         <div className="flex space-x-3">
           <button
             onClick={onClose}
@@ -647,7 +701,7 @@ const DeleteConfirmationModal = ({ isOpen, onClose, onConfirm, loading }) => {
                 Deleting...
               </div>
             ) : (
-              'Delete Account'
+              "Delete Account"
             )}
           </button>
         </div>
