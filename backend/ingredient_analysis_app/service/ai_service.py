@@ -2,7 +2,7 @@ import json
 import logging
 import sys
 from pathlib import Path
-import google.generativeai as genai
+import google.genai as genai
 from PIL import Image
 
 # Add the parent directory to the path to import config module

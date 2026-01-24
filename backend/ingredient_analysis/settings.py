@@ -71,12 +71,8 @@ STATIC_URL = STATIC_URL
 STATIC_ROOT = STATIC_ROOT
 STATICFILES_STORAGE = STATICFILES_STORAGE
 
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': CLOUDINARY_CLOUD_NAME,
-    'API_KEY': CLOUDINARY_API_KEY,
-    'API_SECRET': CLOUDINARY_API_SECRET,
-}
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+# Media files will be handled by cloudinary python SDK directly
+# Configure in models or views as needed
 
 
 # --- Template Configuration ---
