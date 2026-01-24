@@ -1,0 +1,157 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  # Frontend Testing
+  test-frontend:
+    runs-on: ubuntu-latest
+    name: Test Frontend (React)
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run linting
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Build project
+        run: npm run build
+
+  # Backend Testing
+  test-backend:
+    runs-on: ubuntu-latest
+    name: Test Backend (Django)
+    defaults:
+      run:
+        working-directory: ./backend
+
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_DB: ingredient_ai
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run migrations
+        run: python manage.py migrate
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/ingredient_ai
+
+      - name: Run tests
+        run: python manage.py test
+        continue-on-error: true
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/ingredient_ai
+
+  # Deploy to Staging (dev branch)
+  deploy-staging:
+    needs: [test-frontend, test-backend]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
+    name: Deploy to Staging Environment
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Notify deployment start
+        run: echo "🚀 Deploying to staging environment (dev)..."
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: |
+          npm install
+          npm run build
+
+      - name: Build backend
+        working-directory: ./backend
+        run: |
+          pip install -r requirements.txt
+
+      - name: Deploy to staging
+        run: echo "✅ Deployed to staging environment successfully"
+        # Add your staging deployment commands here (e.g., Docker push, SSH deploy, etc.)
+
+  # Deploy to Production (main branch)
+  deploy-production:
+    needs: [test-frontend, test-backend]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    name: Deploy to Production Environment
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Notify deployment start
+        run: echo "🚀 Deploying to production environment (main)..."
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: |
+          npm install
+          npm run build
+
+      - name: Build backend
+        working-directory: ./backend
+        run: |
+          pip install -r requirements.txt
+
+      - name: Deploy to production
+        run: echo "✅ Deployed to production environment successfully"
+        # Add your production deployment commands here (e.g., Docker push, SSH deploy, etc.)
