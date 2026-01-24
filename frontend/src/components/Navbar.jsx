@@ -1,8 +1,17 @@
-import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { Menu, X, User, LogOut, Camera, History, Heart, Home,LayoutDashboard } from 'lucide-react';
-
+import React, { useState } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import {
+  Menu,
+  X,
+  User,
+  LogOut,
+  Camera,
+  History,
+  Heart,
+  Home,
+  LayoutDashboard,
+} from "lucide-react";
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -12,7 +21,7 @@ const Navbar = () => {
 
   const handleLogout = async () => {
     await logout();
-    navigate('/login');
+    navigate("/login");
     setIsMobileMenuOpen(false);
   };
 
@@ -25,12 +34,12 @@ const Navbar = () => {
   };
 
   const navItems = [
-    { path: '/', label: 'Home', icon: Home },
-    { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/analyze', label: 'Analyze', icon: Camera },
-    { path: '/history', label: 'History', icon: History },
-    { path: '/medical-history', label: 'Medical Info', icon: Heart },
-    { path: '/profile', label: 'Profile', icon: User },
+    { path: "/", label: "Home", icon: Home },
+    { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { path: "/analyze", label: "Analyze", icon: Camera },
+    { path: "/history", label: "History", icon: History },
+    { path: "/medical-history", label: "Medical Info", icon: Heart },
+    { path: "/profile", label: "Profile", icon: User },
   ];
 
   return (
@@ -47,36 +56,40 @@ const Navbar = () => {
                 <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   IngredientAI
                 </span>
-                <span className="text-xs text-gray-500 font-medium">Smart Analysis</span>
+                <span className="text-xs text-gray-500 font-medium">
+                  Smart Analysis
+                </span>
               </div>
             </Link>
           </div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-2">
-            {navItems.map(({ path, label, icon: Icon }) => (
+            {navItems.map(({ path, label, icon: IconComponent }) => (
               <Link
                 key={path}
                 to={path}
                 className={`relative flex items-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                   isActive(path)
-                    ? 'text-blue-600 bg-blue-50 shadow-md'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 hover:shadow-sm'
+                    ? "text-blue-600 bg-blue-50 shadow-md"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50 hover:shadow-sm"
                 }`}
               >
-                <Icon className="h-4 w-4" />
+                <IconComponent className="h-4 w-4" />
                 <span>{label}</span>
                 {isActive(path) && (
                   <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl -z-10" />
                 )}
               </Link>
             ))}
-            
+
             <div className="flex items-center space-x-4 ml-8 pl-8 border-l border-gray-200">
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
                   <span className="text-white text-sm font-semibold">
-                    {(user?.first_name || user?.username || 'U').charAt(0).toUpperCase()}
+                    {(user?.first_name || user?.username || "U")
+                      .charAt(0)
+                      .toUpperCase()}
                   </span>
                 </div>
                 <div className="flex flex-col">
@@ -103,15 +116,19 @@ const Navbar = () => {
               className="relative inline-flex items-center justify-center p-2.5 rounded-xl text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 transition-all duration-200"
             >
               <div className="relative w-6 h-6">
-                <Menu 
+                <Menu
                   className={`absolute h-6 w-6 transition-all duration-300 ${
-                    isMobileMenuOpen ? 'rotate-180 opacity-0' : 'rotate-0 opacity-100'
-                  }`} 
+                    isMobileMenuOpen
+                      ? "rotate-180 opacity-0"
+                      : "rotate-0 opacity-100"
+                  }`}
                 />
-                <X 
+                <X
                   className={`absolute h-6 w-6 transition-all duration-300 ${
-                    isMobileMenuOpen ? 'rotate-0 opacity-100' : '-rotate-180 opacity-0'
-                  }`} 
+                    isMobileMenuOpen
+                      ? "rotate-0 opacity-100"
+                      : "-rotate-180 opacity-0"
+                  }`}
                 />
               </div>
             </button>
@@ -120,36 +137,42 @@ const Navbar = () => {
       </div>
 
       {/* Mobile menu */}
-      <div className={`md:hidden transition-all duration-300 ease-in-out ${
-        isMobileMenuOpen ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'
-      } overflow-hidden`}>
+      <div
+        className={`md:hidden transition-all duration-300 ease-in-out ${
+          isMobileMenuOpen ? "max-h-screen opacity-100" : "max-h-0 opacity-0"
+        } overflow-hidden`}
+      >
         <div className="px-4 pt-4 pb-6 space-y-2 bg-white/95 backdrop-blur-md border-t border-gray-100">
-          {navItems.map(({ path, label, icon: Icon }) => (
+          {navItems.map(({ path, label, icon: IconComponent }) => (
             <Link
               key={path}
               to={path}
               onClick={() => setIsMobileMenuOpen(false)}
               className={`flex items-center space-x-3 px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 ${
                 isActive(path)
-                  ? 'text-blue-600 bg-blue-50 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  ? "text-blue-600 bg-blue-50 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
               }`}
             >
-              <div className={`p-2 rounded-lg ${
-                isActive(path) ? 'bg-blue-100' : 'bg-gray-100'
-              }`}>
-                <Icon className="h-5 w-5" />
+              <div
+                className={`p-2 rounded-lg ${
+                  isActive(path) ? "bg-blue-100" : "bg-gray-100"
+                }`}
+              >
+                <IconComponent className="h-5 w-5" />
               </div>
               <span>{label}</span>
             </Link>
           ))}
-          
+
           <div className="border-t border-gray-200 pt-6 mt-6">
             <div className="px-4 py-3 mb-4 bg-gray-50 rounded-xl">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
                   <span className="text-white font-semibold">
-                    {(user?.first_name || user?.username || 'U').charAt(0).toUpperCase()}
+                    {(user?.first_name || user?.username || "U")
+                      .charAt(0)
+                      .toUpperCase()}
                   </span>
                 </div>
                 <div className="flex flex-col">

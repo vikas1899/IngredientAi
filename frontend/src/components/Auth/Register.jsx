@@ -1,44 +1,55 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { Eye, EyeOff, Camera, AlertCircle, Sparkles, ArrowRight, UserPlus, Mail, Lock, User } from 'lucide-react';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
+import {
+  Eye,
+  EyeOff,
+  Camera,
+  AlertCircle,
+  Sparkles,
+  ArrowRight,
+  UserPlus,
+  Mail,
+  Lock,
+  User,
+} from "lucide-react";
 
 const Register = () => {
   const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: '',
-    repeat_password: '',
-    first_name: '',
-    last_name: '',
+    username: "",
+    email: "",
+    password: "",
+    repeat_password: "",
+    first_name: "",
+    last_name: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
-  const [focusedField, setFocusedField] = useState('');
+  const [focusedField, setFocusedField] = useState("");
 
   const { register } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
     // Clear specific field error when user starts typing
     if (errors[name]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [name]: ''
+        [name]: "",
       }));
     }
     // Clear general error too
     if (errors.general) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        general: ''
+        general: "",
       }));
     }
   };
@@ -47,35 +58,35 @@ const Register = () => {
     const newErrors = {};
 
     if (!formData.username.trim()) {
-      newErrors.username = 'Username is required';
+      newErrors.username = "Username is required";
     } else if (formData.username.length < 3) {
-      newErrors.username = 'Username must be at least 3 characters';
+      newErrors.username = "Username must be at least 3 characters";
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email format is invalid';
+      newErrors.email = "Email format is invalid";
     }
 
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = "Password is required";
     } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
+      newErrors.password = "Password must be at least 8 characters";
     }
 
     if (!formData.repeat_password) {
-      newErrors.repeat_password = 'Please confirm your password';
+      newErrors.repeat_password = "Please confirm your password";
     } else if (formData.password !== formData.repeat_password) {
-      newErrors.repeat_password = 'Passwords do not match';
+      newErrors.repeat_password = "Passwords do not match";
     }
 
     if (!formData.first_name.trim()) {
-      newErrors.first_name = 'First name is required';
+      newErrors.first_name = "First name is required";
     }
 
     if (!formData.last_name.trim()) {
-      newErrors.last_name = 'Last name is required';
+      newErrors.last_name = "Last name is required";
     }
 
     return newErrors;
@@ -96,16 +107,18 @@ const Register = () => {
     try {
       const result = await register(formData);
       if (result.success) {
-        navigate('/dashboard');
+        navigate("/dashboard");
       } else {
-        if (typeof result.error === 'object') {
+        if (typeof result.error === "object") {
           setErrors(result.error);
         } else {
-          setErrors({ general: result.error || 'Registration failed. Please try again.' });
+          setErrors({
+            general: result.error || "Registration failed. Please try again.",
+          });
         }
       }
-    } catch (err) {
-      setErrors({ general: 'An unexpected error occurred. Please try again.' });
+    } catch {
+      setErrors({ general: "An unexpected error occurred. Please try again." });
     } finally {
       setLoading(false);
     }
@@ -113,15 +126,15 @@ const Register = () => {
 
   const getFieldIcon = (fieldName) => {
     switch (fieldName) {
-      case 'first_name':
-      case 'last_name':
+      case "first_name":
+      case "last_name":
         return <User className="h-4 w-4 text-gray-400" />;
-      case 'username':
+      case "username":
         return <UserPlus className="h-4 w-4 text-gray-400" />;
-      case 'email':
+      case "email":
         return <Mail className="h-4 w-4 text-gray-400" />;
-      case 'password':
-      case 'repeat_password':
+      case "password":
+      case "repeat_password":
         return <Lock className="h-4 w-4 text-gray-400" />;
       default:
         return null;
@@ -136,7 +149,7 @@ const Register = () => {
         <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-br from-indigo-400/20 to-cyan-600/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-br from-blue-400/10 to-purple-600/10 rounded-full blur-3xl animate-pulse delay-500"></div>
       </div>
-      
+
       <div className="relative flex items-center justify-center min-h-screen py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-6">
           {/* Header */}
@@ -168,12 +181,15 @@ const Register = () => {
                 {/* First Name and Last Name */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label htmlFor="first_name" className="block text-sm font-semibold text-gray-700">
+                    <label
+                      htmlFor="first_name"
+                      className="block text-sm font-semibold text-gray-700"
+                    >
                       First Name
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        {getFieldIcon('first_name')}
+                        {getFieldIcon("first_name")}
                       </div>
                       <input
                         id="first_name"
@@ -181,31 +197,36 @@ const Register = () => {
                         type="text"
                         required
                         className={`w-full pl-10 pr-4 py-3 bg-gray-50/50 border rounded-xl text-gray-900 placeholder-gray-500 transition-all duration-300 focus:outline-none focus:ring-2 focus:border-transparent ${
-                          errors.first_name 
-                            ? 'border-red-300 ring-red-500 bg-red-50/50' 
-                            : focusedField === 'first_name' 
-                              ? 'ring-purple-500 border-purple-300 bg-white shadow-lg' 
-                              : 'border-gray-200 hover:border-gray-300'
+                          errors.first_name
+                            ? "border-red-300 ring-red-500 bg-red-50/50"
+                            : focusedField === "first_name"
+                              ? "ring-purple-500 border-purple-300 bg-white shadow-lg"
+                              : "border-gray-200 hover:border-gray-300"
                         }`}
                         placeholder="First name"
                         value={formData.first_name}
                         onChange={handleChange}
-                        onFocus={() => setFocusedField('first_name')}
-                        onBlur={() => setFocusedField('')}
+                        onFocus={() => setFocusedField("first_name")}
+                        onBlur={() => setFocusedField("")}
                       />
                     </div>
                     {errors.first_name && (
-                      <p className="text-xs text-red-600">{errors.first_name}</p>
+                      <p className="text-xs text-red-600">
+                        {errors.first_name}
+                      </p>
                     )}
                   </div>
 
                   <div className="space-y-2">
-                    <label htmlFor="last_name" className="block text-sm font-semibold text-gray-700">
+                    <label
+                      htmlFor="last_name"
+                      className="block text-sm font-semibold text-gray-700"
+                    >
                       Last Name
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        {getFieldIcon('last_name')}
+                        {getFieldIcon("last_name")}
                       </div>
                       <input
                         id="last_name"
@@ -213,17 +234,17 @@ const Register = () => {
                         type="text"
                         required
                         className={`w-full pl-10 pr-4 py-3 bg-gray-50/50 border rounded-xl text-gray-900 placeholder-gray-500 transition-all duration-300 focus:outline-none focus:ring-2 focus:border-transparent ${
-                          errors.last_name 
-                            ? 'border-red-300 ring-red-500 bg-red-50/50' 
-                            : focusedField === 'last_name' 
-                              ? 'ring-purple-500 border-purple-300 bg-white shadow-lg' 
-                              : 'border-gray-200 hover:border-gray-300'
+                          errors.last_name
+                            ? "border-red-300 ring-red-500 bg-red-50/50"
+                            : focusedField === "last_name"
+                              ? "ring-purple-500 border-purple-300 bg-white shadow-lg"
+                              : "border-gray-200 hover:border-gray-300"
                         }`}
                         placeholder="Last name"
                         value={formData.last_name}
                         onChange={handleChange}
-                        onFocus={() => setFocusedField('last_name')}
-                        onBlur={() => setFocusedField('')}
+                        onFocus={() => setFocusedField("last_name")}
+                        onBlur={() => setFocusedField("")}
                       />
                     </div>
                     {errors.last_name && (
@@ -234,12 +255,15 @@ const Register = () => {
 
                 {/* Username */}
                 <div className="space-y-2">
-                  <label htmlFor="username" className="block text-sm font-semibold text-gray-700">
+                  <label
+                    htmlFor="username"
+                    className="block text-sm font-semibold text-gray-700"
+                  >
                     Username
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      {getFieldIcon('username')}
+                      {getFieldIcon("username")}
                     </div>
                     <input
                       id="username"
@@ -247,17 +271,17 @@ const Register = () => {
                       type="text"
                       required
                       className={`w-full pl-10 pr-4 py-3 bg-gray-50/50 border rounded-xl text-gray-900 placeholder-gray-500 transition-all duration-300 focus:outline-none focus:ring-2 focus:border-transparent ${
-                        errors.username 
-                          ? 'border-red-300 ring-red-500 bg-red-50/50' 
-                          : focusedField === 'username' 
-                            ? 'ring-purple-500 border-purple-300 bg-white shadow-lg' 
-                            : 'border-gray-200 hover:border-gray-300'
+                        errors.username
+                          ? "border-red-300 ring-red-500 bg-red-50/50"
+                          : focusedField === "username"
+                            ? "ring-purple-500 border-purple-300 bg-white shadow-lg"
+                            : "border-gray-200 hover:border-gray-300"
                       }`}
                       placeholder="Choose a username"
                       value={formData.username}
                       onChange={handleChange}
-                      onFocus={() => setFocusedField('username')}
-                      onBlur={() => setFocusedField('')}
+                      onFocus={() => setFocusedField("username")}
+                      onBlur={() => setFocusedField("")}
                     />
                   </div>
                   {errors.username && (
@@ -267,12 +291,15 @@ const Register = () => {
 
                 {/* Email */}
                 <div className="space-y-2">
-                  <label htmlFor="email" className="block text-sm font-semibold text-gray-700">
+                  <label
+                    htmlFor="email"
+                    className="block text-sm font-semibold text-gray-700"
+                  >
                     Email Address
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      {getFieldIcon('email')}
+                      {getFieldIcon("email")}
                     </div>
                     <input
                       id="email"
@@ -280,17 +307,17 @@ const Register = () => {
                       type="email"
                       required
                       className={`w-full pl-10 pr-4 py-3 bg-gray-50/50 border rounded-xl text-gray-900 placeholder-gray-500 transition-all duration-300 focus:outline-none focus:ring-2 focus:border-transparent ${
-                        errors.email 
-                          ? 'border-red-300 ring-red-500 bg-red-50/50' 
-                          : focusedField === 'email' 
-                            ? 'ring-purple-500 border-purple-300 bg-white shadow-lg' 
-                            : 'border-gray-200 hover:border-gray-300'
+                        errors.email
+                          ? "border-red-300 ring-red-500 bg-red-50/50"
+                          : focusedField === "email"
+                            ? "ring-purple-500 border-purple-300 bg-white shadow-lg"
+                            : "border-gray-200 hover:border-gray-300"
                       }`}
                       placeholder="Enter your email"
                       value={formData.email}
                       onChange={handleChange}
-                      onFocus={() => setFocusedField('email')}
-                      onBlur={() => setFocusedField('')}
+                      onFocus={() => setFocusedField("email")}
+                      onBlur={() => setFocusedField("")}
                     />
                   </div>
                   {errors.email && (
@@ -300,30 +327,33 @@ const Register = () => {
 
                 {/* Password */}
                 <div className="space-y-2">
-                  <label htmlFor="password" className="block text-sm font-semibold text-gray-700">
+                  <label
+                    htmlFor="password"
+                    className="block text-sm font-semibold text-gray-700"
+                  >
                     Password
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      {getFieldIcon('password')}
+                      {getFieldIcon("password")}
                     </div>
                     <input
                       id="password"
                       name="password"
-                      type={showPassword ? 'text' : 'password'}
+                      type={showPassword ? "text" : "password"}
                       required
                       className={`w-full pl-10 pr-12 py-3 bg-gray-50/50 border rounded-xl text-gray-900 placeholder-gray-500 transition-all duration-300 focus:outline-none focus:ring-2 focus:border-transparent ${
-                        errors.password 
-                          ? 'border-red-300 ring-red-500 bg-red-50/50' 
-                          : focusedField === 'password' 
-                            ? 'ring-purple-500 border-purple-300 bg-white shadow-lg' 
-                            : 'border-gray-200 hover:border-gray-300'
+                        errors.password
+                          ? "border-red-300 ring-red-500 bg-red-50/50"
+                          : focusedField === "password"
+                            ? "ring-purple-500 border-purple-300 bg-white shadow-lg"
+                            : "border-gray-200 hover:border-gray-300"
                       }`}
                       placeholder="Create a password"
                       value={formData.password}
                       onChange={handleChange}
-                      onFocus={() => setFocusedField('password')}
-                      onBlur={() => setFocusedField('')}
+                      onFocus={() => setFocusedField("password")}
+                      onBlur={() => setFocusedField("")}
                     />
                     <button
                       type="button"
@@ -344,35 +374,40 @@ const Register = () => {
 
                 {/* Confirm Password */}
                 <div className="space-y-2">
-                  <label htmlFor="repeat_password" className="block text-sm font-semibold text-gray-700">
+                  <label
+                    htmlFor="repeat_password"
+                    className="block text-sm font-semibold text-gray-700"
+                  >
                     Confirm Password
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      {getFieldIcon('repeat_password')}
+                      {getFieldIcon("repeat_password")}
                     </div>
                     <input
                       id="repeat_password"
                       name="repeat_password"
-                      type={showConfirmPassword ? 'text' : 'password'}
+                      type={showConfirmPassword ? "text" : "password"}
                       required
                       className={`w-full pl-10 pr-12 py-3 bg-gray-50/50 border rounded-xl text-gray-900 placeholder-gray-500 transition-all duration-300 focus:outline-none focus:ring-2 focus:border-transparent ${
-                        errors.repeat_password 
-                          ? 'border-red-300 ring-red-500 bg-red-50/50' 
-                          : focusedField === 'repeat_password' 
-                            ? 'ring-purple-500 border-purple-300 bg-white shadow-lg' 
-                            : 'border-gray-200 hover:border-gray-300'
+                        errors.repeat_password
+                          ? "border-red-300 ring-red-500 bg-red-50/50"
+                          : focusedField === "repeat_password"
+                            ? "ring-purple-500 border-purple-300 bg-white shadow-lg"
+                            : "border-gray-200 hover:border-gray-300"
                       }`}
                       placeholder="Confirm your password"
                       value={formData.repeat_password}
                       onChange={handleChange}
-                      onFocus={() => setFocusedField('repeat_password')}
-                      onBlur={() => setFocusedField('')}
+                      onFocus={() => setFocusedField("repeat_password")}
+                      onBlur={() => setFocusedField("")}
                     />
                     <button
                       type="button"
                       className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-200"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
                     >
                       {showConfirmPassword ? (
                         <EyeOff className="h-5 w-5" />
@@ -382,7 +417,9 @@ const Register = () => {
                     </button>
                   </div>
                   {errors.repeat_password && (
-                    <p className="text-xs text-red-600">{errors.repeat_password}</p>
+                    <p className="text-xs text-red-600">
+                      {errors.repeat_password}
+                    </p>
                   )}
                 </div>
 
@@ -410,7 +447,7 @@ const Register = () => {
                 {/* Login Link */}
                 <div className="text-center pt-4 border-t border-gray-100">
                   <p className="text-sm text-gray-600">
-                    Already have an account?{' '}
+                    Already have an account?{" "}
                     <Link
                       to="/login"
                       className="font-semibold text-purple-600 hover:text-purple-500 transition-colors duration-200 hover:underline"

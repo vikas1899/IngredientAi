@@ -65,6 +65,7 @@ api.interceptors.response.use(
 
         } catch (refreshError) {
           // Refresh failed → clear tokens & redirect to login
+          console.log(refreshError)
           localStorage.removeItem('access_token');
           localStorage.removeItem('refresh_token');
           window.location.href = '/login';
