@@ -65,7 +65,7 @@ const Navbar = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-2">
-            {navItems.map(({ path, label }) => (
+            {navItems.map(({ path, label, icon: IconComponent }) => (
               <Link
                 key={path}
                 to={path}
@@ -143,7 +143,7 @@ const Navbar = () => {
         } overflow-hidden`}
       >
         <div className="px-4 pt-4 pb-6 space-y-2 bg-white/95 backdrop-blur-md border-t border-gray-100">
-          {navItems.map(({ path, label }) => (
+          {navItems.map(({ path, label, icon: IconComponent }) => (
             <Link
               key={path}
               to={path}

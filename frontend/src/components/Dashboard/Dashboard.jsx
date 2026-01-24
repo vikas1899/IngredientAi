@@ -28,10 +28,6 @@ const Dashboard = () => {
     riskWarnings: 0,
   });
 
-  useEffect(() => {
-    loadDashboardData();
-  }, [loadDashboardData]);
-
   const parseAnalysisResult = useCallback((result) => {
     if (!result) return { status: "safe" };
     if (typeof result === "string") {
@@ -101,6 +97,10 @@ const Dashboard = () => {
       setLoading(false);
     }
   }, [parseAnalysisResult]);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-US", {
