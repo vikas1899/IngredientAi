@@ -10,7 +10,7 @@ jobs:
   # Frontend Testing
   test-frontend:
     runs-on: ubuntu-latest
-    name: Test Fronten d (React)
+    name: Test Frontend (React)
     defaults:
       run:
         working-directory: ./frontend
