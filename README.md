@@ -15,3 +15,4 @@ Detailed documentation for each part of the project is available in their respec
 
 * **[Frontend README](./frontend/README.md)**: Instructions for setting up and running the React frontend.
 * **[Backend README](./backend/README.md)**: Instructions for setting up and running the Django backend.
+
